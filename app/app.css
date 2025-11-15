@@ -320,7 +320,7 @@ img {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-image: url("/assets/img/Logo50Aniversario.png");
+    background-image: url("app/assets/img/Logo50Aniversario.png");
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;

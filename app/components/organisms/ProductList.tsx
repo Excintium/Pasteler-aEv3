@@ -1,6 +1,6 @@
 import type { Route } from "./+types/productos";
-import { PRODUCTOS } from "../../data/products";
-import { ProductCard } from "../molecules/ProductCard";
+import { PRODUCTOS } from "~/data/products";
+import { ProductCard } from "~/components/molecules/ProductCard";
 
 export function meta({}: Route.MetaArgs) {
     return [

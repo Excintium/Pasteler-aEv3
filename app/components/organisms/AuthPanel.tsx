@@ -1,7 +1,7 @@
 // src/components/organisms/AuthPanel.tsx
 import React from "react";
 import { Card } from "antd";
-import { AuthForm } from "../molecules/AuthForm";
+import { AuthForm } from "~/components/molecules/AuthForm";
 
 type AuthMode = "login" | "register" | "forgot";
 

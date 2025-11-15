@@ -1,6 +1,6 @@
 // app/routes/forgot-password.tsx
 import type { Route } from "./+types/forgot-password";
-import { AuthPanel } from "../../src/components/organisms/AuthPanel";
+import { AuthPanel } from "~/components/organisms/AuthPanel";
 
 export function meta({}: Route.MetaArgs) {
     return [

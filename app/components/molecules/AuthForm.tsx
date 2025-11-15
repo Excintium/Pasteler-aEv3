@@ -1,8 +1,8 @@
 import React from "react";
 import { Form, Typography } from "antd";
-import { Input } from "../atoms/Input";
-import { PasswordInput } from "../atoms/PasswordInput";
-import { Button } from "../atoms/Button";
+import { Input } from "~/components/atoms/Input";
+import { PasswordInput } from "~/components/atoms/PasswordInput";
+import { Button } from "~/components/atoms/Button";
 
 const { Title, Paragraph } = Typography;
 
