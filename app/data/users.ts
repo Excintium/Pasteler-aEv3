@@ -13,11 +13,5 @@ export const USERS: User[] = [
         nombre: "Nicolás Fonseca",
         correo: "nico@example.com",
         rol: "admin",
-    },
-    {
-        id: "2",
-        nombre: "Daiyana",
-        correo: "daiyana@example.com",
-        rol: "cliente",
-    },
+    }
 ];

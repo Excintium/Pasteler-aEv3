@@ -1,42 +1,74 @@
+// app/routes/blog.tsx
 import type { Route } from "./+types/blog";
+import { useState } from "react";
 import { BLOG_ARTICULOS } from "~/data/blog";
 import { BlogCard } from "~/components/molecules/BlogCard";
 
 export function meta({}: Route.MetaArgs) {
-    return [{ title: "Blog - Pastelería Mil Sabores" }];
+    return [
+        { title: "Blog - Pastelería Mil Sabores" },
+        {
+            name: "description",
+            content:
+                "Recetas, tips, historias y eventos de Pastelería Mil Sabores.",
+        },
+    ];
 }
 
-export default function Blog() {
+// Ojo: el id "historia" coincide con lo que pusiste en BLOG_ARTICULOS
+const CATEGORIES = [
+    { id: "todas", label: "Todos" },
+    { id: "recetas", label: "Recetas" },
+    { id: "tips", label: "Tips" },
+    { id: "historia", label: "Historias" },
+    { id: "eventos", label: "Eventos" },
+];
+
+export default function BlogPage() {
+    const [activeCategory, setActiveCategory] = useState<string>("todas");
+
+    const filteredArticles =
+        activeCategory === "todas"
+            ? BLOG_ARTICULOS
+            : BLOG_ARTICULOS.filter(
+                (articulo) => articulo.categoria === activeCategory,
+            );
+
     return (
         <section id="blog" className="section active">
             <div className="container">
-                <h2 className="section-title">Blog Mil Sabores</h2>
+                <h2 className="section-title">Blog</h2>
                 <p className="section-subtitle">
-                    Descubre tips, recetas y secretos de la repostería
+                    Recetas, tips, historias y eventos para seguir endulzando tu día.
                 </p>
 
-                <div className="blog-categories">
-                    <button className="filter-btn active" data-category="all">
-                        Todos
-                    </button>
-                    <button className="filter-btn" data-category="recetas">
-                        Recetas
-                    </button>
-                    <button className="filter-btn" data-category="tips">
-                        Tips
-                    </button>
-                    <button className="filter-btn" data-category="historia">
-                        Historia
-                    </button>
-                    <button className="filter-btn" data-category="eventos">
-                        Eventos
-                    </button>
+                {/* Botones de filtro */}
+                <div className="filters blog-filters">
+                    {CATEGORIES.map((cat) => (
+                        <button
+                            key={cat.id}
+                            type="button"
+                            className={
+                                "filter-btn" + (activeCategory === cat.id ? " active" : "")
+                            }
+                            onClick={() => setActiveCategory(cat.id)}
+                        >
+                            {cat.label}
+                        </button>
+                    ))}
                 </div>
 
-                <div className="blog-grid" id="blog-grid">
-                    {BLOG_ARTICULOS.map((articulo) => (
+                {/* Listado de artículos */}
+                <div className="blog-grid">
+                    {filteredArticles.map((articulo) => (
                         <BlogCard key={articulo.id} articulo={articulo} />
                     ))}
+
+                    {filteredArticles.length === 0 && (
+                        <p className="empty-message">
+                            No hay artículos para esta categoría todavía. Vuelve pronto 😊
+                        </p>
+                    )}
                 </div>
             </div>
         </section>
