@@ -1,37 +1,41 @@
-// app/routes/products.tsx
-import type { Route } from "./+types/products";
-import { Typography } from "antd";
-import { useNavigate } from "react-router";
-import { ProductList } from "../../src/components/organisms/ProductList";
+import { PRODUCTOS, CATEGORIAS } from "../../src/data/products";
+import { ProductCard } from "../../src/components/molecules/ProductCard";
 
-const { Title } = Typography;
-
-export function meta({}: Route.MetaArgs) {
+export function meta() {
     return [
-        { title: "Productos - Pastelería" },
-        {
-            name: "description",
-            content: "Catálogo de productos de la pastelería.",
-        },
+        { title: "Productos - Pastelería Mil Sabores" },
     ];
 }
 
-export default function Products() {
-    const navigate = useNavigate();
-
+export default function Productos() {
     return (
-        <main className="pt-16 p-4 container mx-auto">
-            <Title level={2} className="mb-6 text-center">
-                Nuestros productos
-            </Title>
+        <section id="productos" className="section active">
+            <div className="container">
+                <h2 className="section-title">Nuestros Productos</h2>
 
-            <ProductList
-                onVerDetalle={(id) => navigate(`/producto/${id}`)}
-                onAgregarCarrito={(id) => {
-                    // Aquí más adelante integras lógica real de carrito
-                    console.log("Agregar al carrito id:", id);
-                }}
-            />
-        </main>
+                <div className="product-controls">
+                    <input type="text"
+                           id="product-search"
+                           className="product-search"
+                           placeholder="🔍 Buscar productos..."/>
+                </div>
+
+                <div className="filters">
+                    <button className="filter-btn active" data-category="all">Todos</button>
+
+                    {CATEGORIAS.map(categoria => (
+                        <button key={categoria} className="filter-btn" data-category={categoria}>
+                            {categoria}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="products-grid" id="products-grid">
+                    {PRODUCTOS.map(producto => (
+                        <ProductCard key={producto.codigo} producto={producto} />
+                    ))}
+                </div>
+            </div>
+        </section>
     );
 }

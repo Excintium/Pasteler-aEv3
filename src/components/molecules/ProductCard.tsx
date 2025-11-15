@@ -1,46 +1,43 @@
-import React from "react";
-import { Card, Typography } from "antd";
-import { Button } from "../atoms/Button";
-import type { Product } from "../../data/products";
+import React from 'react';
 
-const { Title, Paragraph, Text } = Typography;
-
-interface ProductCardProps {
-    product: Product;
-    onVerDetalle?: (id: string) => void;
-    onAgregarCarrito?: (id: string) => void;
+function formatearPrecio(precio: number) {
+    return `$${precio.toLocaleString('es-CL')}`;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({
-                                                            product,
-                                                            onVerDetalle,
-                                                            onAgregarCarrito,
-                                                        }) => {
+type Producto = {
+    codigo: string;
+    imagen: string;
+    nombre: string;
+    categoria: string;
+    descripcion: string;
+    precio: number;
+};
+
+export const ProductCard = ({ producto }: { producto: Producto }) => {
     return (
-        <Card
-            hoverable
-            cover={
-                product.imagen ? (
-                    <img src={product.imagen} alt={product.nombre} />
-                ) : null
-            }
-            style={{ width: 300 }}
-        >
-            <Title level={4}>{product.nombre}</Title>
-            <Paragraph ellipsis={{ rows: 2 }}>{product.descripcion}</Paragraph>
-            <Text strong>${product.precio.toLocaleString("es-CL")}</Text>
-            <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-                {onVerDetalle && (
-                    <Button type="default" onClick={() => onVerDetalle(product.id)}>
-                        Ver detalle
-                    </Button>
-                )}
-                {onAgregarCarrito && (
-                    <Button type="primary" onClick={() => onAgregarCarrito(product.id)}>
-                        Agregar al carrito
-                    </Button>
-                )}
+        <div className="product-card" data-code={producto.codigo}>
+            <div className="product-image">
+                <img
+                    src={producto.imagen}
+                    alt={producto.nombre}
+                    className="product-img"
+                    loading="lazy"
+                />
+                <div className="product-category">{producto.categoria}</div>
             </div>
-        </Card>
+            <div className="product-info">
+                <h4 className="product-name">{producto.nombre}</h4>
+                <p className="product-description">{producto.descripcion}</p>
+                <div className="product-price">{formatearPrecio(producto.precio)}</div>
+                <div className="product-actions">
+                    <button className="btn-add-cart">
+                        <i className="fas fa-shopping-cart"></i> Agregar
+                    </button>
+                    <button className="btn-view-product">
+                        <i className="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 };

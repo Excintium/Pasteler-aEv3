@@ -1,118 +1,87 @@
 import type { Route } from "./+types/home";
-import { Typography, Card } from "antd";
-import { Link } from "react-router";
-import { Button } from "../../src/components/atoms/Button";
-import { ProductList } from "../../src/components/organisms/ProductList";
-
-const { Title, Paragraph } = Typography;
+import { PRODUCTOS, EMPRESA } from "../../src/data/products";
+import { ProductCard } from "../../src/components/molecules/ProductCard";
 
 export function meta({}: Route.MetaArgs) {
     return [
-        { title: "Mil Sabores Dulces - Inicio" },
-        {
-            name: "description",
-            content:
-                "Pastelería artesanal con tortas y postres hechos a mano. Un sabor para cada momento.",
-        },
+        { title: "Pastelería Mil Sabores - Dulces momentos desde 1975" },
+        { name: "description", content: "Pastelería Mil Sabores - 50 años endulzando la vida de las familias chilenas." },
     ];
 }
 
 export default function Home() {
+    const productosDestacados = PRODUCTOS.filter(p => p.destacado);
+
     return (
-        <div className="global-container">
-            {/* --- HERO --- */}
-            <section className="mb-12 grid gap-8 md:grid-cols-2 items-center home-hero">
-                <div>
-                    <Title style={{ fontSize: "2.5rem", color: "#D9486E" }}>
-                        Mil Sabores Dulces
-                    </Title>
+        <section id="home" className="section active">
+            <div className="hero">
+                <div className="container">
+                    <div className="hero-content">
+                        <div className="hero-text">
+                            <h2 className="hero-title">Celebrando 50 años de tradición</h2>
+                            <p className="hero-subtitle">Desde 1975 endulzando la vida de las familias chilenas</p>
 
-                    <Paragraph style={{ fontSize: "1.1rem", color: "#5A5A5A" }}>
-                        Pastelería artesanal con recetas únicas, sabores suaves y diseños
-                        personalizados para tus momentos especiales.
-                    </Paragraph>
+                            <div className="hero-features">
+                                <div className="feature">
+                                    <i className="fas fa-birthday-cake"></i>
+                                    <span>Tortas personalizadas para toda ocasión</span>
+                                </div>
+                                <div className="feature">
+                                    <i className="fas fa-leaf"></i>
+                                    <span>Opciones sin gluten y veganas disponibles</span>
+                                </div>
+                                <div className="feature">
+                                    <i className="fas fa-truck"></i>
+                                    <span>Entregas en toda la Región Metropolitana</span>
+                                </div>
+                                <div className="feature">
+                                    <i className="fas fa-heart"></i>
+                                    <span>Hechos con amor y tradición familiar</span>
+                                </div>
+                            </div>
 
-                    <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
-                        <Link to="/productos">
-                            <Button type="primary" size="large" className="btn-rose">
-                                Ver catálogo
-                            </Button>
-                        </Link>
+                            <button className="btn-primary hero-btn">
+                                <i className="fas fa-store"></i> Ver Productos
+                            </button>
+                        </div>
 
-                        <Link to="/login">
-                            <Button size="large" className="btn-rounded">
-                                Iniciar sesión
-                            </Button>
-                        </Link>
+                        <div className="hero-image">
+                            <div className="anniversary-badge">
+                                <div className="anniversary-number">50</div>
+                                <div className="anniversary-text">años</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Imagen ajustada */}
-                <div
-                    style={{
-                        width: "100%",
-                        maxHeight: "320px",
-                        overflow: "hidden",
-                        borderRadius: "20px",
-                        boxShadow: "0 10px 20px rgba(0, 0, 0, 0.1)",
-                    }}
-                >
+            <div className="container">
+                <h3 className="section-title">Productos Destacados</h3>
+                <div className="products-grid" id="featured-products">
+                    {productosDestacados.map(producto => (
+                        <ProductCard key={producto.codigo} producto={producto} />
+                    ))}
                 </div>
-            </section>
+            </div>
 
-            {/* --- DESTACADOS --- */}
-            <section className="mb-12">
-                <div className="flex items-center justify-between mb-4">
-                    <Title level={3} style={{ color: "#C73E5C" }}>
-                        Productos destacados
-                    </Title>
-
-                    <Link to="/productos">
-                        <Button type="link" style={{ color: "#C73E5C" }}>
-                            Ver todo
-                        </Button>
-                    </Link>
+            <div className="company-info">
+                <div className="container">
+                    <div className="info-grid">
+                        <div className="info-card">
+                            <h4>Nuestra Misión</h4>
+                            <p>{EMPRESA.mision}</p>
+                        </div>
+                        <div className="info-card">
+                            <h4>Nuestra Visión</h4>
+                            <p>{EMPRESA.vision}</p>
+                        </div>
+                        <div className="info-card">
+                            <h4>Nuestra Historia</h4>
+                            <p>Desde 1975, hemos mantenido la tradición familiar en la repostería, incluso obteniendo un Récord Guinness en 1995.</p>
+                        </div>
+                    </div>
                 </div>
-
-                <ProductList />
-            </section>
-
-            {/* --- CUADROS FINALES --- */}
-            <section className="mt-8 grid gap-6 lg:grid-cols-2">
-                <Card
-                    className="shadow-sm card-soft"
-                    style={{ backgroundColor: "#FFEFF2" }}
-                >
-                    <Title level={4} style={{ color: "#C73E5C" }}>
-                        ¿Ya tienes cuenta?
-                    </Title>
-                    <Paragraph>
-                        Accede a tus pedidos y disfruta de un proceso más rápido.
-                    </Paragraph>
-                    <Link to="/login">
-                        <Button type="primary" className="btn-rose">
-                            Iniciar sesión
-                        </Button>
-                    </Link>
-                </Card>
-
-                <Card
-                    className="shadow-sm card-soft"
-                    style={{ backgroundColor: "#FFF4D9" }}
-                >
-                    <Title level={4} style={{ color: "#BC7A00" }}>
-                        ¿Olvidaste tu contraseña?
-                    </Title>
-                    <Paragraph>
-                        Recupera el acceso a tu cuenta de forma fácil.
-                    </Paragraph>
-                    <Link to="/recuperar">
-                        <Button type="default" className="btn-rounded">
-                            Recuperar contraseña
-                        </Button>
-                    </Link>
-                </Card>
-            </section>
-        </div>
+            </div>
+        </section>
     );
 }

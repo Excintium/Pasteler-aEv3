@@ -1,6 +1,6 @@
 // app/routes/users.tsx
 import type { Route } from "./+types/users";
-import { Typography, Table, Tag } from "antd";
+import  { Typography, Table, Tag } from "antd";
 import { USERS } from "../../src/data/users";
 
 const { Title } = Typography;
