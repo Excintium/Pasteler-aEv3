@@ -12,7 +12,6 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
-
 import { CartProvider } from "~/services/cart-context";
 
 export const links: Route.LinksFunction = () => [
@@ -36,6 +35,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="es">
         <head>
+            <title>Pastelería Mil Sabores</title>
             <meta charSet="utf-8" />
             <meta
                 name="viewport"
@@ -59,7 +59,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         <ul className="nav-menu" id="nav-menu">
                             <li>
                                 <NavLink
-                                    to="/home"
+                                    to="/"
                                     end
                                     data-section="home"
                                     className={({ isActive }) =>
@@ -71,7 +71,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                             </li>
                             <li>
                                 <NavLink
-                                    to="/products"
+                                    to="/productos"
                                     data-section="productos"
                                     className={({ isActive }) =>
                                         "nav-link" + (isActive ? " active" : "")
@@ -104,7 +104,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                             </li>
                             <li>
                                 <NavLink
-                                    to="/register"
+                                    to="/registro"
                                     data-section="registro"
                                     className={({ isActive }) =>
                                         "nav-link" + (isActive ? " active" : "")
@@ -131,7 +131,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                                 className="user-info"
                                 style={{ display: "none" }}
                             />
-                            {/* Carrito -> /carrito */}
+                            {/* Botón de carrito → /carrito */}
                             <NavLink
                                 to="/carrito"
                                 className="cart-btn"
@@ -157,6 +157,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </nav>
             </header>
 
+            {/* Aquí van las páginas (Home, Productos, etc.) */}
             {children}
 
             <footer className="footer">
@@ -184,11 +185,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         <div className="footer-section">
                             <h4>Navegación</h4>
                             <ul>
+                                {/* Rutas alineadas con routes.ts */}
                                 <li>
                                     <Link to="/">Inicio</Link>
                                 </li>
                                 <li>
-                                    <Link to="/products">Productos</Link>
+                                    <Link to="/productos">Productos</Link>
                                 </li>
                                 <li>
                                     <Link to="/blog">Blog</Link>
