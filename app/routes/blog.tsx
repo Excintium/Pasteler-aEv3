@@ -20,7 +20,7 @@ const CATEGORIES = [
     { id: "todas", label: "Todos" },
     { id: "recetas", label: "Recetas" },
     { id: "tips", label: "Tips" },
-    { id: "historia", label: "Historias" },
+    { id: "historia", label: "Historia" },
     { id: "eventos", label: "Eventos" },
 ];
 

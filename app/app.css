@@ -124,9 +124,11 @@ img {
 
 .nav-menu {
     display: flex;
-    list-style: none;
-    gap: var(--spacing-lg);
+    align-items: center;
+    gap: 1.5rem;
     margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
 .nav-link {
@@ -146,20 +148,132 @@ img {
 }
 
 .nav-actions {
+    margin-left: auto;
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: 0.75rem;
+}
+.profile-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    background: #fff7ec;
+    color: #7b3f00;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    margin-right: 0.75rem;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.profile-pill .fas {
+    font-size: 0.9rem;
+}
+
+.profile-pill:hover {
+    background: #ffe0b8;
+    transform: translateY(-1px);
+}
+
+/* Perfil page (muy simple) */
+.profile-card {
+    max-width: 520px;
+    margin: 0 auto;
+    background: #fff7ec;
+    border-radius: 1rem;
+    padding: 1.75rem;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.profile-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #ffcc99;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7b3f00;
+}
+
+.profile-avatar .fas {
+    font-size: 1.2rem;
+}
+
+.profile-name {
+    margin: 0;
+}
+
+.profile-email {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #7a7a7a;
+}
+
+.profile-benefit {
+    margin-top: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #fff0d6;
+    border-radius: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.profile-benefit .fas {
+    margin-right: 0.5rem;
+}
+
+.profile-details {
+    margin-top: 1rem;
+    font-size: 0.95rem;
+}
+
+.profile-note {
+    margin-top: 1.25rem;
+    font-size: 0.9rem;
+    color: #7a7a7a;
 }
 
 .user-info {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    background: rgba(255,255,255,0.3);
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: 25px;
+    gap: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
 }
 
+.user-summary {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-email {
+    font-weight: 600;
+}
+
+.user-type {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+/* Botón de cerrar sesión estilo link */
+.btn-link {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.75rem;
+    text-decoration: underline;
+}
 .btn-logout {
     background: var(--color-chocolate);
     color: white;
@@ -1192,8 +1306,10 @@ img {
     }
 
     .navbar .container {
-        padding-left: 80px;
-        flex-wrap: wrap;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
     }
 
     /* Ajusta el tamaño de logo para que no quede muy grande */

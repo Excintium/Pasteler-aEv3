@@ -1,117 +1,254 @@
-import React from "react";
-import { Form, Typography } from "antd";
-import { Input } from "~/components/atoms/Input";
-import { PasswordInput } from "~/components/atoms/PasswordInput";
-import { Button } from "~/components/atoms/Button";
+// app/components/molecules/AuthForm.tsx
+import {
+    useEffect,
+    useState,
+    type FormEvent,
+} from "react";
+import { Link, useNavigate } from "react-router";
 
-const { Title, Paragraph } = Typography;
+type UsuarioTipo = "mayor" | "estudiante" | "regular";
 
-type AuthMode = "login" | "register" | "forgot";
+type Usuario = {
+    email: string;
+    password: string;
+    tipo: UsuarioTipo;
+};
 
-interface AuthFormProps {
-    mode: AuthMode;
-    onSubmit?: (values: any) => void;
+const STORAGE_KEY = "usuarios_mil_sabores";
+const CURRENT_KEY = "usuario_actual_mil_sabores";
+
+const DEMO_USERS: Usuario[] = [
+    { email: "mayor@gmail.com",      password: "password123", tipo: "mayor" },
+    { email: "estudiante@duoc.cl",   password: "password123", tipo: "estudiante" },
+    { email: "usuario@gmail.com",    password: "password123", tipo: "regular" },
+];
+
+// --- helpers de localStorage ---
+
+function leerUsuarios(): Usuario[] {
+    if (typeof window === "undefined") return DEMO_USERS;
+
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+        // si no hay nada, inicializamos con los demos
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(DEMO_USERS));
+        return DEMO_USERS;
+    }
+
+    try {
+        const guardados = JSON.parse(raw) as Usuario[];
+
+        // nos aseguramos de que los demo estén presentes
+        const mezclados = [...guardados];
+        for (const demo of DEMO_USERS) {
+            if (!mezclados.some((u) => u.email === demo.email)) {
+                mezclados.push(demo);
+            }
+        }
+
+        if (mezclados.length !== guardados.length) {
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mezclados));
+        }
+
+        return mezclados;
+    } catch {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(DEMO_USERS));
+        return DEMO_USERS;
+    }
 }
 
-export const AuthForm: React.FC<AuthFormProps> = ({ mode, onSubmit }) => {
-    const [form] = Form.useForm();
+function guardarUsuarios(usuarios: Usuario[]) {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(usuarios));
+}
 
-    const titles: Record<AuthMode, string> = {
-        login: "Iniciar sesión",
-        register: "Crear cuenta",
-        forgot: "Recuperar contraseña",
-    };
+interface AuthFormProps {
+    mode: "login" | "register";
+}
 
-    const descriptions: Record<AuthMode, string> = {
-        login: "Ingresa con tu correo y contraseña para continuar.",
-        register: "Crea una cuenta para hacer tus pedidos más rápido.",
-        forgot:
-            "Ingresa tu correo y te enviaremos instrucciones para recuperar tu contraseña.",
-    };
+export function AuthForm({ mode }: AuthFormProps) {
+    const navigate = useNavigate();
+    const isLogin = mode === "login";
 
-    const submitLabel: Record<AuthMode, string> = {
-        login: "Entrar",
-        register: "Registrarme",
-        forgot: "Enviar enlace de recuperación",
-    };
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [tipo, setTipo] = useState<UsuarioTipo>("regular");
 
-    const handleFinish = (values: any) => {
-        // Por ahora, solo log y callback
-        console.log(`[AuthForm:${mode}] values:`, values);
-        if (onSubmit) onSubmit(values);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
+
+    // Asegura que existan los usuarios demo
+    useEffect(() => {
+        leerUsuarios();
+    }, []);
+
+    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setError(null);
+        setSuccess(null);
+
+        if (typeof window === "undefined") return;
+
+        if (isLogin) {
+            // ---- LOGIN ----
+            const usuarios = leerUsuarios();
+            const usuario = usuarios.find(
+                (u) => u.email === email && u.password === password,
+            );
+
+            if (!usuario) {
+                setError("Correo o contraseña incorrectos");
+                return;
+            }
+
+            window.localStorage.setItem(
+                CURRENT_KEY,
+                JSON.stringify({ email: usuario.email, tipo: usuario.tipo }),
+            );
+            // avisar al header que cambió el usuario
+            window.dispatchEvent(
+                new Event("usuario_actual_mil_sabores_changed"),
+            );
+
+            setSuccess("Inicio de sesión exitoso 😎");
+
+            // 👇 importante: home es la raíz "/"
+            navigate("/");
+        } else {
+            // ---- REGISTRO ----
+            if (!email || !password) {
+                setError("Completa todos los campos");
+                return;
+            }
+
+            let usuarios = leerUsuarios();
+
+            if (usuarios.some((u) => u.email === email)) {
+                setError("Ya existe un usuario con ese correo");
+                return;
+            }
+
+            const nuevo: Usuario = { email, password, tipo };
+            usuarios = [...usuarios, nuevo];
+            guardarUsuarios(usuarios);
+
+            // lo dejamos logeado inmediatamente
+            window.localStorage.setItem(
+                CURRENT_KEY,
+                JSON.stringify({ email: nuevo.email, tipo: nuevo.tipo }),
+            );
+            window.dispatchEvent(
+                new Event("usuario_actual_mil_sabores_changed"),
+            );
+
+            setSuccess("Registro exitoso. Te hemos iniciado sesión automáticamente 🎉");
+            navigate("/");
+        }
     };
 
     return (
-        <div style={{ maxWidth: 400, margin: "0 auto" }}>
-            <Title level={2} className="mb-2 text-center">
-                {titles[mode]}
-            </Title>
-            <Paragraph className="mb-6 text-center">{descriptions[mode]}</Paragraph>
+        <section className="section active auth-section">
+            <div className="container auth-layout">
+                {/* Panel principal */}
+                <div className="auth-card">
+                    <h2 className="section-title">
+                        {isLogin ? "Iniciar Sesión" : "Registro de Usuario"}
+                    </h2>
+                    <p className="auth-subtitle">
+                        {isLogin
+                            ? "Ingresa con tu correo y contraseña para ver tus descuentos y pedidos."
+                            : "Crea tu cuenta para acceder a beneficios y descuentos exclusivos."}
+                    </p>
 
-            <Form layout="vertical" form={form} onFinish={handleFinish}>
-                {/* Campos compartidos */}
-                {(mode === "login" || mode === "register" || mode === "forgot") && (
-                    <Form.Item
-                        name="email"
-                        label="Correo electrónico"
-                        rules={[
-                            { required: true, message: "Ingresa tu correo" },
-                            { type: "email", message: "Ingresa un correo válido" },
-                        ]}
-                    >
-                        <Input placeholder="ej: correo@ejemplo.com" />
-                    </Form.Item>
-                )}
+                    <form className="auth-form" onSubmit={handleSubmit}>
+                        <label className="form-field">
+                            <span>Correo electrónico</span>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                placeholder="ej: usuario@gmail.com"
+                            />
+                        </label>
 
-                {mode === "register" && (
-                    <Form.Item
-                        name="nombre"
-                        label="Nombre completo"
-                        rules={[{ required: true, message: "Ingresa tu nombre" }]}
-                    >
-                        <Input placeholder="Tu nombre" />
-                    </Form.Item>
-                )}
+                        <label className="form-field">
+                            <span>Contraseña</span>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                placeholder="••••••••"
+                            />
+                        </label>
 
-                {mode === "login" || mode === "register" ? (
-                    <Form.Item
-                        name="password"
-                        label="Contraseña"
-                        rules={[{ required: true, message: "Ingresa tu contraseña" }]}
-                    >
-                        <PasswordInput placeholder="Contraseña" />
-                    </Form.Item>
-                ) : null}
+                        {!isLogin && (
+                            <label className="form-field">
+                                <span>Tipo de usuario</span>
+                                <select
+                                    value={tipo}
+                                    onChange={(e) => setTipo(e.target.value as UsuarioTipo)}
+                                >
+                                    <option value="mayor">Usuario Mayor</option>
+                                    <option value="estudiante">Estudiante Duoc</option>
+                                    <option value="regular">Usuario Regular</option>
+                                </select>
+                            </label>
+                        )}
 
-                {mode === "register" && (
-                    <Form.Item
-                        name="confirmPassword"
-                        label="Confirmar contraseña"
-                        dependencies={["password"]}
-                        rules={[
-                            { required: true, message: "Confirma tu contraseña" },
-                            ({ getFieldValue }) => ({
-                                validator(_, value) {
-                                    if (!value || getFieldValue("password") === value) {
-                                        return Promise.resolve();
-                                    }
-                                    return Promise.reject(
-                                        new Error("Las contraseñas no coinciden")
-                                    );
-                                },
-                            }),
-                        ]}
-                    >
-                        <PasswordInput placeholder="Repite tu contraseña" />
-                    </Form.Item>
-                )}
+                        {error && <p className="form-error">{error}</p>}
+                        {success && <p className="form-success">{success}</p>}
 
-                <Form.Item className="mt-4">
-                    <Button type="primary" htmlType="submit" block>
-                        {submitLabel[mode]}
-                    </Button>
-                </Form.Item>
-            </Form>
-        </div>
+                        <button type="submit" className="btn-primary auth-submit-btn">
+                            {isLogin ? "Entrar" : "Registrarme"}
+                        </button>
+
+                        <div className="auth-switch">
+                            {isLogin ? (
+                                <span>
+                  ¿No tienes cuenta?{" "}
+                                    <Link to="/registro" className="auth-link">
+                    Crear una cuenta
+                  </Link>
+                </span>
+                            ) : (
+                                <span>
+                  ¿Ya tienes cuenta?{" "}
+                                    <Link to="/login" className="auth-link">
+                    Inicia sesión
+                  </Link>
+                </span>
+                            )}
+                        </div>
+                    </form>
+                </div>
+
+                {/* Lado derecho: usuarios demo / info extra */}
+                <aside className="auth-side">
+                    <div className="demo-users">
+                        <h4>👥 Usuarios de Prueba:</h4>
+
+                        <div className="demo-user">
+                            <strong>Usuario Mayor:</strong> mayor@gmail.com / password123
+                            <br />
+                            <small>Recibe 50% descuento por edad</small>
+                        </div>
+
+                        <div className="demo-user">
+                            <strong>Estudiante Duoc:</strong> estudiante@duoc.cl / password123
+                            <br />
+                            <small>Torta gratis en cumpleaños</small>
+                        </div>
+
+                        <div className="demo-user">
+                            <strong>Usuario Regular:</strong> usuario@gmail.com / password123
+                            <br />
+                            <small>Descuentos aplicables con códigos</small>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
     );
-};
+}

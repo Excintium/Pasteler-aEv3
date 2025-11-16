@@ -12,7 +12,9 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
+
 import { CartProvider } from "~/services/cart-context";
+import { AuthProvider, useAuth } from "~/services/auth-context";
 
 export const links: Route.LinksFunction = () => [
     { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -31,29 +33,18 @@ export const links: Route.LinksFunction = () => [
     },
 ];
 
-export function Layout({ children }: { children: React.ReactNode }) {
+function Shell({ children }: { children: React.ReactNode }) {
+    const { usuarioActual, logout, obtenerBeneficioUsuario } = useAuth();
+    const beneficio = obtenerBeneficioUsuario(usuarioActual);
+
     return (
-        <html lang="es">
-        <head>
-            <title>Pastelería Mil Sabores</title>
-            <meta charSet="utf-8" />
-            <meta
-                name="viewport"
-                content="width=device-width, initial-scale=1"
-            />
-            <Meta />
-            <Links />
-        </head>
-        <body>
-        <CartProvider>
+        <>
             <header className="header">
                 <nav className="navbar">
                     <div className="container">
                         <div className="nav-brand">
                             <h1 className="logo">Pastelería Mil Sabores</h1>
-                            <span className="tagline">
-                    Dulces momentos desde 1975
-                  </span>
+                            <span className="tagline">Dulces momentos desde 1975</span>
                         </div>
 
                         <ul className="nav-menu" id="nav-menu">
@@ -102,51 +93,78 @@ export function Layout({ children }: { children: React.ReactNode }) {
                                     Contacto
                                 </NavLink>
                             </li>
-                            <li>
-                                <NavLink
-                                    to="/registro"
-                                    data-section="registro"
-                                    className={({ isActive }) =>
-                                        "nav-link" + (isActive ? " active" : "")
-                                    }
-                                >
-                                    Registro
-                                </NavLink>
-                            </li>
-                            <li>
-                                <NavLink
-                                    to="/login"
-                                    data-section="login"
-                                    className={({ isActive }) =>
-                                        "nav-link" + (isActive ? " active" : "")
-                                    }
-                                >
-                                    Iniciar Sesión
-                                </NavLink>
-                            </li>
+
+                            {/* Solo mostrar Registro / Login si NO hay usuario */}
+                            {!usuarioActual && (
+                                <>
+                                    <li>
+                                        <NavLink
+                                            to="/registro"
+                                            data-section="registro"
+                                            className={({ isActive }) =>
+                                                "nav-link" + (isActive ? " active" : "")
+                                            }
+                                        >
+                                            Registro
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink
+                                            to="/login"
+                                            data-section="login"
+                                            className={({ isActive }) =>
+                                                "nav-link" + (isActive ? " active" : "")
+                                            }
+                                        >
+                                            Iniciar Sesión
+                                        </NavLink>
+                                    </li>
+                                </>
+                            )}
                         </ul>
 
                         <div className="nav-actions">
-                            <div
-                                className="user-info"
-                                style={{ display: "none" }}
-                            />
-                            {/* Botón de carrito → /carrito */}
+                            {usuarioActual ? (
+                                <>
+                                    {/* Pestaña / pill de PERFIL en la esquina derecha */}
+                                    <NavLink
+                                        to="/perfil"
+                                        className="profile-pill"
+                                        title="Ver perfil"
+                                    >
+                                        <i className="fas fa-user" />
+                                        <span className="profile-name">
+          {usuarioActual.nombre || usuarioActual.email}
+        </span>
+                                    </NavLink>
+
+                                    <button
+                                        type="button"
+                                        className="btn-link"
+                                        onClick={logout}
+                                        style={{ marginRight: "0.75rem" }}
+                                    >
+                                        Cerrar sesión
+                                    </button>
+                                </>
+                            ) : (
+                                // cuando no hay sesión, dejamos el placeholder oculto
+                                <div className="user-info" style={{ display: "none" }} />
+                            )}
+
                             <NavLink
-                                to="/carrito"
+                                to="/cart"
                                 className="cart-btn"
                                 id="cart-btn"
                                 title="Ver carrito"
                             >
                                 <i className="fas fa-shopping-cart" />
-                                <span
-                                    className="cart-count"
-                                    style={{ display: "none" }}
-                                >
-                      0
-                    </span>
+                                <span className="cart-count" style={{ display: "none" }}>
+      0
+    </span>
                             </NavLink>
                         </div>
+
 
                         <button className="nav-toggle">
                             <span />
@@ -157,7 +175,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </nav>
             </header>
 
-            {/* Aquí van las páginas (Home, Productos, etc.) */}
             {children}
 
             <footer className="footer">
@@ -166,8 +183,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         <div className="footer-section">
                             <h4>Pastelería Mil Sabores</h4>
                             <p>
-                                50 años endulzando la vida de las familias chilenas
-                                con productos de repostería de la más alta calidad.
+                                50 años endulzando la vida de las familias chilenas con productos
+                                de repostería de la más alta calidad.
                             </p>
                             <div className="social-links">
                                 <a href="#" title="Facebook">
@@ -185,12 +202,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         <div className="footer-section">
                             <h4>Navegación</h4>
                             <ul>
-                                {/* Rutas alineadas con routes.ts */}
                                 <li>
                                     <Link to="/">Inicio</Link>
                                 </li>
                                 <li>
-                                    <Link to="/productos">Productos</Link>
+                                    <Link to="/products">Productos</Link>
                                 </li>
                                 <li>
                                     <Link to="/blog">Blog</Link>
@@ -223,14 +239,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </div>
 
                     <div className="footer-bottom">
-                        <p>
-                            &copy; 2024 Pastelería Mil Sabores. Todos los
-                            derechos reservados.
-                        </p>
+                        <p>&copy; 2024 Pastelería Mil Sabores. Todos los derechos reservados.</p>
                         <p>Hecho con ❤️ en Chile</p>
                         <p>
-                            &copy; Desarrolladores: Nicolás Fonseca | Bastián
-                            Bravo | Bastián Rubio.
+                            &copy; Desarrolladores: Nicolás Fonseca | Bastián Bravo | Bastián
+                            Rubio.
                         </p>
                     </div>
                 </div>
@@ -238,14 +251,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
             <div id="notification" className="notification">
                 <span id="notification-message" />
-                <button
-                    id="notification-close"
-                    className="notification-close"
-                >
+                <button id="notification-close" className="notification-close">
                     &times;
                 </button>
             </div>
-        </CartProvider>
+        </>
+    );
+}
+
+export function Layout({ children }: { children: React.ReactNode }) {
+    return (
+        <html lang="es">
+        <head>
+            <meta charSet="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <Meta />
+            <Links />
+        </head>
+        <body>
+        {/* Providers a nivel de aplicación */}
+        <AuthProvider>
+            <CartProvider>
+                <Shell>{children}</Shell>
+            </CartProvider>
+        </AuthProvider>
 
         <ScrollRestoration />
         <Scripts />
