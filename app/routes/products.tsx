@@ -1,8 +1,8 @@
-// app/routes/products.tsx
 import type { Route } from "./+types/products";
 import { useMemo, useState } from "react";
-import { PRODUCTOS, CATEGORIAS } from "~/data/products";
+import { PRODUCTOS, CATEGORIAS, type Producto } from "~/data/products";
 import { ProductCard } from "~/components/molecules/ProductCard";
+import { ProductModal } from "~/components/organisms/ProductModal";
 
 export function meta({}: Route.MetaArgs) {
     return [{ title: "Productos - Pastelería Mil Sabores" }];
@@ -10,8 +10,21 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Productos() {
     const [search, setSearch] = useState("");
-    const [categoriaSeleccionada, setCategoriaSeleccionada] =
-        useState<string>("all");
+    const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>("all");
+    
+    // Estado para el modal
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null);
+
+    const handleViewProduct = (product: Producto) => {
+        setSelectedProduct(product);
+        setModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setModalOpen(false);
+        setSelectedProduct(null);
+    };
 
     const productosFiltrados = useMemo(
         () =>
@@ -40,7 +53,6 @@ export default function Productos() {
                 <div className="product-controls">
                     <input
                         type="text"
-                        id="product-search"
                         className="product-search"
                         placeholder="🔍 Buscar productos..."
                         value={search}
@@ -50,22 +62,15 @@ export default function Productos() {
 
                 <div className="filters">
                     <button
-                        className={
-                            "filter-btn" +
-                            (categoriaSeleccionada === "all" ? " active" : "")
-                        }
+                        className={"filter-btn" + (categoriaSeleccionada === "all" ? " active" : "")}
                         onClick={() => setCategoriaSeleccionada("all")}
                     >
                         Todos
                     </button>
-
                     {CATEGORIAS.map((categoria) => (
                         <button
                             key={categoria}
-                            className={
-                                "filter-btn" +
-                                (categoriaSeleccionada === categoria ? " active" : "")
-                            }
+                            className={"filter-btn" + (categoriaSeleccionada === categoria ? " active" : "")}
                             onClick={() => setCategoriaSeleccionada(categoria)}
                         >
                             {categoria}
@@ -73,18 +78,22 @@ export default function Productos() {
                     ))}
                 </div>
 
-                <div className="products-grid" id="products-grid">
-                    {productosFiltrados.length === 0 ? (
-                        <p className="no-results">
-                            No encontramos productos para tu búsqueda.
-                        </p>
-                    ) : (
-                        productosFiltrados.map((producto) => (
-                            <ProductCard key={producto.codigo} product={producto} />
-                        ))
-                    )}
+                <div className="products-grid">
+                    {productosFiltrados.map((producto) => (
+                        <ProductCard 
+                            key={producto.codigo} 
+                            product={producto} 
+                            onView={handleViewProduct}
+                        />
+                    ))}
                 </div>
             </div>
+
+            <ProductModal 
+                isOpen={modalOpen} 
+                onClose={handleCloseModal} 
+                product={selectedProduct} 
+            />
         </section>
     );
 }
