@@ -1,7 +1,8 @@
-// app/routes/home.tsx
 import type { Route } from "./+types/home";
-import { PRODUCTOS, EMPRESA } from "~/data/products";
+import { useState } from "react";
+import { PRODUCTOS, EMPRESA, type Producto } from "~/data/products";
 import { ProductCard } from "~/components/molecules/ProductCard";
+import { ProductModal } from "~/components/organisms/ProductModal";
 import { Link } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
@@ -19,6 +20,20 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Home() {
     const productosDestacados = PRODUCTOS.filter((p) => p.destacado).slice(0, 4);
+
+    // LÓGICA DEL MODAL
+    const [modalOpen, setModalOpen] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null);
+
+    const handleViewProduct = (product: Producto) => {
+        setSelectedProduct(product);
+        setModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setModalOpen(false);
+        setSelectedProduct(null);
+    };
 
     return (
         <section id="home" className="section active">
@@ -69,7 +84,11 @@ export default function Home() {
                 <h3 className="section-title">Productos Destacados</h3>
                 <div className="products-grid" id="featured-products">
                     {productosDestacados.map((producto) => (
-                        <ProductCard key={producto.codigo} product={producto} />
+                        <ProductCard 
+                            key={producto.codigo} 
+                            product={producto} 
+                            onView={handleViewProduct}
+                        />
                     ))}
                 </div>
             </div>
@@ -95,6 +114,12 @@ export default function Home() {
                     </div>
                 </div>
             </div>
+
+            <ProductModal 
+                isOpen={modalOpen} 
+                onClose={handleCloseModal} 
+                product={selectedProduct} 
+            />
         </section>
     );
 }
