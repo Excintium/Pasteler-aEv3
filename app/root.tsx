@@ -187,13 +187,13 @@ function Shell({ children }: { children: React.ReactNode }) {
                                 de repostería de la más alta calidad.
                             </p>
                             <div className="social-links">
-                                <a href="#" title="Facebook">
+                                <a href="https://www.facebook.com/" title="Facebook">
                                     <i className="fab fa-facebook-f" />
                                 </a>
-                                <a href="#" title="Instagram">
+                                <a href="https://www.instagram.com/" title="Instagram">
                                     <i className="fab fa-instagram" />
                                 </a>
-                                <a href="#" title="X">
+                                <a href="https://x.com" title="X">
                                     <i className="fab fa-x" />
                                 </a>
                             </div>
