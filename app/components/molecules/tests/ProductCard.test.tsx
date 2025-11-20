@@ -1,27 +1,26 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
+import { ProductCard } from "../ProductCard";
+
+/* Este es el primer test, habran anotaciones de todo el código para mayor 
+   claridad en el resto de tests, por si falla alguno xd */
 
 // Mockeo de los hooks de los servicios (debe ir antes de importar el componente)
 const mockAddToCart = vi.fn(); // Función mock para agregar al carrito
 const mockShowNotification = vi.fn(); // Función mock para mostrar notificaciones
 
-vi.mock("~/services/cart-context", () => ({
-  useCart: () => ({
-    addToCart: mockAddToCart,
+vi.mock("~/services/cart-context", () => ({ // Mock del contexto del carrito
+  useCart: () => ({ // Mock de la función useCart
+    addToCart: mockAddToCart, // Usamos la función mock creada arriba
   }),
 }));
 
-vi.mock("~/services/notification-context", () => ({
-  useNotification: () => ({
-    showNotification: mockShowNotification,
+vi.mock("~/services/notification-context", () => ({ // Mock del contexto de notificaciones
+  useNotification: () => ({ // Mock de la función useNotification
+    showNotification: mockShowNotification, // Usamos la función mock creada arriba
   }),
 }));
-
-import { ProductCard } from "../ProductCard";
-
-/* Este es el primer test, habran anotaciones de todo el código para mayor 
-   claridad en el resto de tests, por si falla alguno xd */
 
 // Mockeo de datos (creación de un producto falso)
 const mockProduct = { // Datos falsos para simular un producto en los tests
@@ -63,5 +62,8 @@ describe("ProductCard Component", () => {
         // Verificamos que nuestra función espía addToCart haya sido llamada con el producto correcto
         expect(mockAddToCart).toHaveBeenCalledTimes(1);
         expect(mockAddToCart).toHaveBeenCalledWith(mockProduct);
-    });
+
+        expect(mockShowNotification).toHaveBeenCalledTimes(1);
+        expect(mockShowNotification).toHaveBeenCalledWith(expect.stringContaining(mockProduct.nombre));   
+     });
 });

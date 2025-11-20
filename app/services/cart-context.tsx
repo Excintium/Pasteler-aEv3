@@ -83,7 +83,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 }
 
 export function useCart() {
-    const ctx = useContext(CartContext); // 👈 aquí el cambio
+    const ctx = useContext(CartContext);
     if (!ctx) {
         throw new Error("useCart debe usarse dentro de un CartProvider");
     }
