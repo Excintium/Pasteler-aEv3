@@ -36,7 +36,7 @@ export default function LoginPage() {
         try {
             setLoading(true);
             login(email, password);
-            navigate("/", { replace: true }); // 👈 redirige a /
+            navigate("/", { replace: true });
         } catch (err: any) {
             setError(err?.message ?? "Correo o contraseña incorrectos.");
         } finally {

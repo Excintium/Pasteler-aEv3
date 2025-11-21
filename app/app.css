@@ -96,17 +96,19 @@ img {
 
 .navbar .container {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 1.5rem;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 0;
+    width: 100%;
 }
 
 .nav-brand {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    margin-right: var(--spacing-xl);
+    margin-right: 1rem;
+    flex-shrink: 0;
 }
 
 .logo {
@@ -131,7 +133,10 @@ img {
     margin: 0;
     padding: 0;
     list-style: none;
-    margin-right: auto;
+
+    margin-left: auto;
+    margin-right: 1.5rem;
+    flex-shrink: 0;
 }
 
 .nav-link {
@@ -151,10 +156,11 @@ img {
 }
 
 .nav-actions {
-    margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1rem;
+    margin: 0;
+    flex-shrink: 0;
 }
 .profile-pill {
     display: inline-flex;
@@ -162,13 +168,13 @@ img {
     gap: 0.5rem;
     padding: 0.35rem 0.9rem;
     border-radius: 999px;
-    background: #fff7ec;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(139, 69, 19, 0.1);
     color: #7b3f00;
     font-weight: 600;
     text-decoration: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-    margin-right: 0.75rem;
-    transition: background 0.15s ease, transform 0.15s ease;
+    transition: all 0.2s ease;
+    white-space: nowrap;
 }
 
 .profile-pill .fas {
@@ -176,8 +182,9 @@ img {
 }
 
 .profile-pill:hover {
-    background: #ffe0b8;
+    background: white;
     transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(139, 69, 19, 0.1);
 }
 
 /* Perfil page (muy simple) */
@@ -578,7 +585,7 @@ img {
     color: var(--color-chocolate-dark);
     padding: 4px 12px;
     border-radius: 20px;
-    font-size: 0.75rem;
+    font-size: 0.9rem;
     font-weight: 600;
     z-index: 2;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -799,43 +806,46 @@ img {
     display: block;
 }
 
-.form-benefits {
+.auth-benefits {
     background: var(--color-verde-menta);
     padding: var(--spacing-lg);
-    border-radius: 15px;
+    border-radius: 0.95rem;
     margin: var(--spacing-md) 0;
+    margin-top: 1.5rem;
 }
 
-.form-benefits h4 {
+.auth-benefits h4 {
     color: var(--color-chocolate);
     margin-bottom: var(--spacing-md);
 }
 
-.form-benefits ul {
+.auth-benefits ul {
     list-style: none;
 }
 
-.form-benefits li {
+.auth-benefits li {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
     margin-bottom: var(--spacing-sm);
 }
 
-.form-benefits i {
+.auth-benefits i {
     color: var(--color-dorado);
 }
 
 .form-footer {
     text-align: center;
     margin-top: var(--spacing-lg);
-    color: var(--color-gris-claro);
+    color: var(--color-chocolate-dark);
+    margin-top: 0;
 }
 
 .form-footer a {
     color: var(--color-chocolate);
     font-weight: 600;
 }
+
 
 /* Usuarios demo */
 .demo-users {
@@ -1594,6 +1604,7 @@ img {
         transition: left 0.3s ease;
         z-index: 999;
         overflow-y: auto;
+        margin: 0;
     }
 
     .nav-menu.active {
