@@ -8,7 +8,7 @@ import { Link } from "react-router";
 export function meta({}: Route.MetaArgs) {
     return [
         {
-            title: "Pastelería Mil Sabores - Dulces momentos desde 1975",
+            title: "Pastelería Mil Sabores - Dulces momentos desde 1973",
         },
         {
             name: "description",
