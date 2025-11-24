@@ -43,7 +43,7 @@ export default function Home() {
                         <div className="hero-text">
                             <h2 className="hero-title">Celebrando 50 años de tradición</h2>
                             <p className="hero-subtitle">
-                                Desde 1975 endulzando la vida de las familias chilenas
+                                Desde 1973 endulzando la vida de las familias chilenas
                             </p>
 
                             <div className="hero-features">
