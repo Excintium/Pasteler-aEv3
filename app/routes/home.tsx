@@ -65,7 +65,7 @@ export default function Home() {
                                 </div>
                             </div>
 
-                            <Link to="/products" className="btn-primary hero-btn">
+                            <Link to="/productos" className="btn-primary hero-btn">
                                 <i className="fas fa-store" /> Ver Productos
                             </Link>
                         </div>
