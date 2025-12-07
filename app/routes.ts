@@ -8,6 +8,7 @@ export default [
     { path: "registro", file: "routes/register.tsx" },
     { path: "blog", file: "routes/blog.tsx" },
     { path: "contacto", file: "routes/contacto.tsx" },
-    { path: "recuperar", file: "routes/forgot-password.tsx" }, // 👈 este
+    { path: "recuperar", file: "routes/forgot-password.tsx" },
     { path: "cart", file: "routes/cart.tsx" },
+    { path: "perfil", file: "routes/perfil.tsx" },
 ] satisfies RouteConfig;

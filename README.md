@@ -1,94 +1,91 @@
-Pastelería Mil Sabores (Proyecto PasteleriaEv3)
-Bienvenido al proyecto "Pastelería Mil Sabores" (pasteleriaev3). Esta es una aplicación web full-stack moderna que simula un sitio de e-commerce para una pastelería ficticia. La aplicación celebra los 50 años de tradición de la pastelería, ofreciendo a los usuarios una plataforma para explorar productos, gestionar un carrito de compras y aprender más sobre la empresa.
+# Pastelería Mil Sabores (pasteleria-aev3)
 
-El proyecto está construido utilizando React Router con renderizado del lado del servidor (SSR), Vite como herramienta de desarrollo y TypeScript.
+## 1. Introducción
 
-📜 Descripción
-La "Pastelería Mil Sabores" es una tienda online que permite a los clientes ver un catálogo de tortas, postres y productos de pastelería, filtrar por categorías (como "Sin Gluten", "Vegana", "Tortas Especiales"), añadirlos a un carrito de compras y registrarse como usuarios.
+**Pastelería Mil Sabores** es una aplicación web full-stack que simula una plataforma de e-commerce para una pastelería. El proyecto está construido sobre un stack moderno basado en **React**, **Vite** y **TypeScript**, y utiliza **React Router** para la gestión de rutas y renderizado del lado del servidor (SSR).
 
-El sitio también incluye secciones informativas como un blog y una página de contacto.
+La aplicación ofrece una experiencia de usuario completa, desde la exploración de productos y la gestión de un carrito de compras, hasta funcionalidades de autenticación simulada y un panel de administración básico.
 
-✨ Características Principales
-Catálogo de Productos: Visualización de productos en cuadrícula con detalles, precios e imágenes.
+## 2. Características Principales
 
-Filtros y Búsqueda: Funcionalidad para filtrar productos por categoría y buscar por término.
+- **Catálogo de Productos:** Interfaz para visualizar productos con detalles, precios e imágenes, con funcionalidades de filtrado por categoría y búsqueda.
+- **Carrito de Compras:** Gestión de estado del carrito persistente en `LocalStorage` a través de React Context.
+- **Autenticación (Mock):** Formularios de inicio de sesión, registro y recuperación de contraseña.
+- **Panel de Administración:** Vista simple para listar usuarios registrados, implementada con Ant Design.
+- **Renderizado del Lado del Servidor (SSR):** Configurado para mejorar el rendimiento y el SEO.
+- **Diseño Responsivo:** Adaptable a diferentes dispositivos mediante el uso de CSS media queries.
+- **Blog:** Sección de artículos con capacidad de filtrado por categorías.
 
-Carrito de Compras: Gestión del estado del carrito mediante React Context, con persistencia en LocalStorage.
+## 3. Stack Tecnológico
 
-Sección de Blog: Muestra artículos que pueden ser filtrados por categorías (recetas, tips, historia).
+- **Framework Principal:** [React](https://react.dev/)
+- **Enrutamiento y SSR:** [React Router](https://reactrouter.com/) (v7+)
+- **Bundler y Servidor de Desarrollo:** [Vite](https://vitejs.dev/)
+- **Lenguaje:** [TypeScript](https://www.typescriptlang.org/)
+- **Librería de UI:** [Ant Design (AntD)](https://ant.design/)
+- **Estilos:**
+  - [TailwindCSS](https://tailwindcss.com/): Para utilidades y layout.
+  - **CSS Nativas:** Para estilos y personalización de componentes.
+- **Cliente HTTP:** [Axios](https://axios-http.com/)
+- **Contenerización:** [Docker](https://www.docker.com/)
 
-Autenticación (Mock): Formularios para Iniciar Sesión, Registro y Recuperación de Contraseña.
+## 4. Variables de Entorno
 
-Panel de Usuarios: Una vista simple (probablemente para administradores) que lista los usuarios registrados usando Ant Design.
+Para el correcto funcionamiento de la aplicación, es necesario crear un archivo `.env` en la raíz del proyecto con las siguientes variables:
 
-SSR: La aplicación está configurada para Renderizado del Lado del Servidor (SSR).
+```env
+# Ejemplo de variable de entorno
+VITE_API_URL = http://localhost:3000/api/v1
+```
 
-Diseño Responsivo: Incluye media queries para adaptarse a dispositivos móviles.
+**Nota:** Reemplaza los valores de ejemplo con las configuraciones específicas de tu entorno de desarrollo o producción.
 
-🛠️ Stack Tecnológico
-El proyecto utiliza las siguientes tecnologías principales:
+## 5. Instalación y Ejecución Local
 
-Framework: React Router (v7+)
+### Prerrequisitos
 
-Bundler y Servidor de Desarrollo: Vite
+- [Node.js](https://nodejs.org/) (v20 o superior)
+- [npm](https://www.npmjs.com/) (v10 o superior)
 
-Lenguaje: TypeScript
+### Pasos
 
-Librería de UI: Ant Design (AntD)
+1. **Clonar el repositorio:**
+   ```bash
+   git clone <URL_DEL_REPOSITORIO>
+   cd pasteleria-aev3
+   ```
 
-Estilos: TailwindCSS (para utilidades) y CSS personalizado (app.css) para el skinning principal.
+2. **Instalar dependencias:**
+   ```bash
+   npm install
+   ```
 
-Contenerización: Docker.
+3. **Iniciar el servidor de desarrollo:**
+   ```bash
+   npm run dev
+   ```
+   La aplicación estará disponible en `http://localhost:5173`.
 
-🚀 Cómo Empezar
-Sigue estos pasos para levantar el proyecto en tu entorno local.
+## 6. Scripts Disponibles
 
-Prerrequisitos
-Node.js (v20 o superior, según Dockerfile)
+El archivo `package.json` incluye los siguientes scripts:
 
-npm (v10 o superior)
+- `npm run dev`: Inicia el servidor de desarrollo con Hot Module Replacement (HMR).
+- `npm run build`: Compila y empaqueta la aplicación para producción en el directorio `build/`.
+- `npm run start`: Ejecuta el servidor de producción (`react-router-serve`). Requiere una compilación previa (`npm run build`).
+- `npm run typecheck`: Valida los tipos de TypeScript en todo el proyecto.
 
-Instalación y Ejecución
-Clonar el repositorio (si estuviera en uno):
+## 7. Despliegue con Docker
 
-Bash
+El proyecto está configurado para ser desplegado utilizando Docker, gracias a un `Dockerfile` multi-etapa que optimiza el tamaño de la imagen final.
 
-git clone [URL_DEL_REPOSITORIO]
-cd pasteleria-ev3
-Instalar dependencias:
+1. **Construir la imagen Docker:**
+   ```bash
+   docker build -t pasteleria-aev3 .
+   ```
 
-Bash
-
-npm install
-Iniciar el servidor de desarrollo: El proyecto usa el CLI de React Router, que a su vez utiliza Vite.
-
-Bash
-
-npm run dev
-Abrir la aplicación: La aplicación estará disponible en http://localhost:5173.
-
-📦 Scripts Disponibles
-Estos son los scripts principales definidos en package.json:
-
-npm run dev Inicia el servidor de desarrollo con HMR (Hot Module Replacement).
-
-npm run build Compila la aplicación para producción. Genera los assets del cliente y el bundle del servidor en la carpeta build/.
-
-npm run start Inicia el servidor de producción (react-router-serve). Requiere haber ejecutado npm run build previamente.
-
-npm run typecheck Ejecuta el compilador de TypeScript (tsc) para verificar errores de tipado en el proyecto.
-
-🐳 Despliegue con Docker
-El proyecto incluye un Dockerfile optimizado para construir una imagen de producción multi-etapa.
-
-Construir la imagen de Docker:
-
-Bash
-
-docker build -t pasteleria-ev3 .
-Ejecutar el contenedor: (El README.md original sugiere el puerto 3000, que es el puerto por defecto de react-router-serve).
-
-Bash
-
-docker run -p 3000:3000 pasteleria-ev3
-La aplicación estará accesible en http://localhost:3000.
+2. **Ejecutar el contenedor:**
+   ```bash
+   docker run -p 3000:3000 pasteleria-aev3
+   ```
+   La aplicación estará accesible en `http://localhost:3000`.
