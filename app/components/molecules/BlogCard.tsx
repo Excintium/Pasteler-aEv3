@@ -1,6 +1,6 @@
-// app/components/molecules/BlogCard.tsx
 import type { FC } from "react";
 import type { Articulo } from "~/data/blog";
+import { Link } from "react-router"; // <--- 1. Importamos Link
 
 // Funciones de ayuda
 function truncarTexto(texto: string, limite: number) {
@@ -43,17 +43,23 @@ export const BlogCard: FC<Props> = ({ articulo }) => {
                 </p>
 
                 <div className="blog-meta">
-          <span className="blog-author">
-            <i className="fas fa-user" /> {articulo.autor}
-          </span>
+                    <span className="blog-author">
+                        <i className="fas fa-user" /> {articulo.autor}
+                    </span>
                     <span className="blog-date">
-            <i className="fas fa-calendar" /> {formatearFecha(articulo.fecha)}
-          </span>
+                        <i className="fas fa-calendar" /> {formatearFecha(articulo.fecha)}
+                    </span>
                 </div>
 
-                <button className="btn-primary">
+                {/* 2. Reemplazamos <button> por <Link> */}
+                {/* marginTop: 'auto' empuja el botón al final si la tarjeta crece */}
+                <Link
+                    to={`/blog/${articulo.id}`}
+                    className="btn-primary"
+                    style={{ marginTop: 'auto', textAlign: 'center', textDecoration: 'none' }}
+                >
                     <i className="fas fa-book-open" /> Leer más
-                </button>
+                </Link>
             </div>
         </article>
     );
