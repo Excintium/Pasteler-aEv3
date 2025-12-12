@@ -1,31 +1,67 @@
 import type { Route } from "./+types/home";
 import { useState } from "react";
-import { PRODUCTOS, EMPRESA, type Producto } from "~/data/products";
+import { Link } from "react-router";
 import { ProductCard } from "~/components/molecules/ProductCard";
 import { ProductModal } from "~/components/organisms/ProductModal";
-import { Link } from "react-router";
+import { EMPRESA } from "~/data/products"; // Datos estáticos de la empresa
+import { api } from "~/services/api";
+
+/**
+ * INTERFACE: HomeProduct
+ * Refleja la estructura de la entidad 'Product' del Backend NestJS.
+ * Se define localmente para asegurar independencia del contrato de datos en esta vista.
+ */
+interface HomeProduct {
+    id: number;
+    codigo: string;
+    nombre: string;
+    categoria: string;
+    precio: number;
+    descripcion: string;
+    imagen: string;
+    destacado: boolean;
+}
+
+/**
+ * LOADER (Server-Side Data Fetching)
+ * Patrón estándar en React Router v7.
+ * Se ejecuta antes de renderizar la ruta para proveer datos frescos.
+ */
+export async function loader() {
+    try {
+        // Petición al endpoint /products del Backend
+        const { data } = await api.get<HomeProduct[]>("/products");
+
+        // Lógica de Presentación:
+        // Filtramos productos destacados y limitamos a 4 para la grilla del Home.
+        const featuredProducts = data
+            .filter((p) => p.destacado)
+            .slice(0, 4);
+
+        return { featuredProducts, error: null };
+    } catch (error) {
+        console.error("[HomeLoader] Error fetching products:", error);
+        // Fallback gracefully: devolvemos lista vacía para no romper la UI completa
+        return { featuredProducts: [], error: "No se pudieron cargar los productos destacados." };
+    }
+}
 
 export function meta({}: Route.MetaArgs) {
     return [
-        {
-            title: "Pastelería Mil Sabores - Dulces momentos desde 1973",
-        },
-        {
-            name: "description",
-            content:
-                "Pastelería Mil Sabores - 50 años endulzando la vida de las familias chilenas.",
-        },
+        { title: "Pastelería Mil Sabores - Dulces momentos desde 1973" },
+        { name: "description", content: "Pastelería Mil Sabores - 50 años endulzando la vida de las familias chilenas." },
     ];
 }
 
-export default function Home() {
-    const productosDestacados = PRODUCTOS.filter((p) => p.destacado).slice(0, 4);
+export default function Home({ loaderData }: Route.ComponentProps) {
+    // Desestructuración de datos provenientes del loader
+    const { featuredProducts, error } = loaderData;
 
-    // LÓGICA DEL MODAL
+    // --- LÓGICA DEL MODAL (UI State) ---
     const [modalOpen, setModalOpen] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState<Producto | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 
-    const handleViewProduct = (product: Producto) => {
+    const handleViewProduct = (product: any) => {
         setSelectedProduct(product);
         setModalOpen(true);
     };
@@ -37,6 +73,7 @@ export default function Home() {
 
     return (
         <section id="home" className="section active">
+            {/* --- HERO SECTION (Estático) --- */}
             <div className="hero">
                 <div className="container">
                     <div className="hero-content">
@@ -80,19 +117,33 @@ export default function Home() {
                 </div>
             </div>
 
+            {/* --- PRODUCTOS DESTACADOS (Dinámico desde Backend) --- */}
             <div className="container">
                 <h3 className="section-title">Productos Destacados</h3>
-                <div className="products-grid" id="featured-products">
-                    {productosDestacados.map((producto) => (
-                        <ProductCard
-                            key={producto.codigo}
-                            product={producto}
-                            onView={handleViewProduct}
-                        />
-                    ))}
-                </div>
+
+                {featuredProducts.length > 0 ? (
+                    <div className="products-grid" id="featured-products">
+                        {featuredProducts.map((producto) => (
+                            <ProductCard
+                                key={producto.id} // Usamos ID de base de datos
+                                product={producto}
+                                onView={handleViewProduct}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    // Estado Vacío / Error
+                    <div className="text-center py-10">
+                        {error ? (
+                            <p className="text-red-500">{error}</p>
+                        ) : (
+                            <p className="text-gray-500">Pronto tendremos novedades para ti.</p>
+                        )}
+                    </div>
+                )}
             </div>
 
+            {/* --- INFO EMPRESA (Estático) --- */}
             <div className="company-info">
                 <div className="container">
                     <div className="info-grid">

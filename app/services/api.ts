@@ -27,11 +27,13 @@ export const api = axios.create({
  */
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem("jwt_access_token");
+        if (typeof window !== "undefined") {
+            const token = localStorage.getItem("jwt_access_token");
 
-        if (token && config.headers) {
-            // Formato estándar Bearer
-            config.headers.Authorization = `Bearer ${token}`;
+            if (token && config.headers) {
+                // Formato estándar Bearer
+                config.headers.Authorization = `Bearer ${token}`;
+            }
         }
         return config;
     },
@@ -48,7 +50,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error: AxiosError) => {
-        if (error.response?.status === 401) {
+        if (error.response?.status === 401 && typeof window !== "undefined") {
             console.warn("[API] Sesión expirada o token inválido. Limpiando credenciales.");
             // Limpiamos el token local para obligar al usuario a loguearse de nuevo
             localStorage.removeItem("jwt_access_token");
