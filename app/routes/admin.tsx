@@ -1,6 +1,6 @@
 import { useAuth } from "~/services/auth-context";
 import { useNavigate, Link } from "react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ChangeEvent } from "react";
 import { api } from "~/services/api";
 
 export function meta() {
@@ -9,6 +9,43 @@ export function meta() {
 
 type TabType = 'resumen' | 'usuarios' | 'productos' | 'blog';
 
+/**
+ * --- INTERFACES DE DATOS (Frontend) ---
+ * Alineadas con los DTOs y Entities de NestJS
+ */
+
+interface User {
+    id: string;
+    name: string; // Backend envía 'name'
+    email: string;
+    rol: string;
+    fechaNacimiento?: string | Date;
+}
+
+interface Product {
+    id: number; // Backend usa number para productos
+    codigo: string;
+    nombre: string;
+    categoria: string;
+    precio: number;
+    descripcion: string;
+    imagen: string;
+    destacado: boolean;
+}
+
+interface Post {
+    id: number; // Backend usa number para posts
+    titulo: string;
+    contenido: string;
+    autor?: string;
+    categoria?: string;
+    imagen?: string;
+    createdAt?: string;
+}
+
+/**
+ * COMPONENTE PRINCIPAL
+ */
 export default function AdminDashboard() {
     const { usuarioActual, isLoading } = useAuth();
     const navigate = useNavigate();
@@ -27,9 +64,9 @@ export default function AdminDashboard() {
     const renderContent = () => {
         switch (activeTab) {
             case 'resumen': return <DashboardSummary />;
-            case 'usuarios': return <UserCreateForm />;
-            case 'productos': return <ProductCreateForm />;
-            case 'blog': return <BlogCreateForm />;
+            case 'usuarios': return <UserManagementPanel />;
+            case 'productos': return <ProductManagementPanel />; // Nuevo Componente Refactorizado
+            case 'blog': return <BlogManagementPanel />;       // Nuevo Componente Refactorizado
             default: return <DashboardSummary />;
         }
     };
@@ -44,7 +81,7 @@ export default function AdminDashboard() {
                             Panel de Control
                         </h2>
                         <p style={{ color: '#8b5a2b', marginTop: '0.5rem', fontStyle: 'italic' }}>
-                            👨‍🍳 Bienvenido a la cocina, {usuarioActual?.nombre}
+                            👨‍🍳 Bienvenido a la cocina, {usuarioActual?.nombre || "Chef"}
                         </p>
                     </div>
                     <Link to="/perfil" className="btn-secondary" style={pastryStyles.secondaryButton}>
@@ -69,7 +106,7 @@ export default function AdminDashboard() {
     );
 }
 
-// --- SUB-COMPONENTES ---
+// --- SUB-COMPONENTES DE UI ---
 
 function TabButton({ label, active, onClick }: { label: string, active: boolean, onClick: () => void }) {
     return (
@@ -77,7 +114,7 @@ function TabButton({ label, active, onClick }: { label: string, active: boolean,
             onClick={onClick}
             style={{
                 ...pastryStyles.tabButton,
-                backgroundColor: active ? '#D2691E' : 'transparent', // Chocolate o transparente
+                backgroundColor: active ? '#D2691E' : 'transparent',
                 color: active ? '#fff' : '#8B4513',
                 border: active ? 'none' : '1px dashed #D2691E',
                 boxShadow: active ? '0 4px 10px rgba(210, 105, 30, 0.3)' : 'none'
@@ -88,7 +125,9 @@ function TabButton({ label, active, onClick }: { label: string, active: boolean,
     );
 }
 
-/** Pestaña 1: Resumen */
+/**
+ * PESTAÑA 1: RESUMEN
+ */
 function DashboardSummary() {
     return (
         <div>
@@ -115,6 +154,7 @@ function DashboardSummary() {
                     <p>24 unidades</p>
                 </div>
             </div>
+            {/* Tabla Estática de Ejemplo (Podrías conectarla a una API de Orders después) */}
             <div className="summary-card" style={{marginTop: '2rem'}}>
                 <h3>📦 Últimos Pedidos</h3>
                 <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
@@ -146,90 +186,269 @@ function DashboardSummary() {
     );
 }
 
-/** Pestaña 2: Usuarios */
-function UserCreateForm() {
+/**
+ * PESTAÑA 2: GESTIÓN DE USUARIOS
+ * (Versión corregida previamente)
+ */
+function UserManagementPanel() {
     const { register } = useAuth();
     const [msg, setMsg] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+    const [users, setUsers] = useState<User[]>([]);
+    const [isLoadingList, setIsLoadingList] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+
+    const [formData, setFormData] = useState({
+        id: '',
+        nombre: '',
+        email: '',
+        password: '',
+        fechaNacimiento: '',
+        rol: 'user'
+    });
+
+    useEffect(() => { fetchUsers(); }, []);
+
+    const fetchUsers = async () => {
+        setIsLoadingList(true);
+        try {
+            const { data } = await api.get<User[]>('/users');
+            setUsers(data);
+        } catch (error) {
+            setMsg({ text: "Error al cargar usuarios.", type: 'error' });
+        } finally { setIsLoadingList(false); }
+    };
+
+    const resetForm = () => {
+        setFormData({ id: '', nombre: '', email: '', password: '', fechaNacimiento: '', rol: 'user' });
+        setIsEditing(false);
+        setMsg(null);
+    };
+
+    const handleEditClick = (user: User) => {
+        setMsg(null);
+        setIsEditing(true);
+        let fechaFormat = '';
+        if (user.fechaNacimiento) {
+            const dateObj = new Date(user.fechaNacimiento);
+            if (!isNaN(dateObj.getTime())) fechaFormat = dateObj.toISOString().split('T')[0];
+        }
+        setFormData({
+            id: user.id,
+            nombre: user.name,
+            email: user.email,
+            password: '',
+            fechaNacimiento: fechaFormat,
+            rol: user.rol || 'user'
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setMsg(null);
-        const formData = new FormData(e.currentTarget);
         try {
-            await register({
-                nombre: formData.get("nombre") as string,
-                email: formData.get("email") as string,
-                password: formData.get("password") as string,
-                fechaNacimiento: formData.get("fechaNacimiento") as string,
-                rol: formData.get("rol") as string
-            });
-            setMsg({ text: "✅ Usuario registrado con dulzura.", type: 'success' });
-            (e.target as HTMLFormElement).reset();
-        } catch (error) {
-            setMsg({ text: "❌ Hubo un error en la mezcla. Intenta de nuevo.", type: 'error' });
+            if (isEditing) {
+                const payload: any = {
+                    name: formData.nombre,
+                    email: formData.email,
+                    rol: formData.rol,
+                    fechaNacimiento: formData.fechaNacimiento ? new Date(formData.fechaNacimiento) : undefined
+                };
+                if (formData.password?.trim()) payload.password = formData.password;
+
+                await api.patch(`/users/${formData.id}`, payload);
+                setMsg({ text: "✅ Usuario actualizado.", type: 'success' });
+            } else {
+                await register({
+                    nombre: formData.nombre,
+                    email: formData.email,
+                    password: formData.password,
+                    fechaNacimiento: formData.fechaNacimiento,
+                    rol: formData.rol
+                });
+                setMsg({ text: "✅ Usuario registrado.", type: 'success' });
+            }
+            resetForm();
+            setTimeout(fetchUsers, 300);
+        } catch (error: any) {
+            const msgText = error.response?.data?.message || "Error al procesar.";
+            setMsg({ text: `❌ ${Array.isArray(msgText) ? msgText.join(', ') : msgText}`, type: 'error' });
         }
     };
 
+    const handleDeleteClick = async (id: string) => {
+        if (!confirm("¿Eliminar usuario?")) return;
+        try {
+            await api.delete(`/users/${id}`);
+            setMsg({ text: "🗑️ Usuario eliminado.", type: 'success' });
+            setUsers(prev => prev.filter(u => u.id !== id));
+        } catch (error) { setMsg({ text: "❌ Error al eliminar.", type: 'error' }); }
+    };
+
     return (
-        <div style={pastryStyles.card}>
-            <h3 style={pastryStyles.cardTitle}>👤 Registrar Nuevo Usuario</h3>
-            <form onSubmit={handleSubmit} style={pastryStyles.formGrid}>
-                <div style={pastryStyles.formGroup}>
-                    <label style={pastryStyles.label}>Nombre Completo</label>
-                    <input name="nombre" type="text" style={pastryStyles.input} required />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={pastryStyles.card}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                    <h3 style={{...pastryStyles.cardTitle, marginBottom:0, borderBottom:'none'}}>
+                        {isEditing ? "✏️ Editar Usuario" : "👤 Registrar Usuario"}
+                    </h3>
+                    {isEditing && <button onClick={resetForm} style={pastryStyles.secondaryButton}>Cancelar</button>}
                 </div>
-                <div style={pastryStyles.formGroup}>
-                    <label style={pastryStyles.label}>Email</label>
-                    <input name="email" type="email" style={pastryStyles.input} required />
-                </div>
-                <div style={pastryStyles.formGroup}>
-                    <label style={pastryStyles.label}>Contraseña</label>
-                    <input name="password" type="password" style={pastryStyles.input} required />
-                </div>
-                <div style={pastryStyles.formGroup}>
-                    <label style={pastryStyles.label}>Fecha de Nacimiento</label>
-                    <input name="fechaNacimiento" type="date" style={pastryStyles.input} required />
-                </div>
-                <div style={pastryStyles.formGroup}>
-                    <label style={pastryStyles.label}>Rol en la Cocina</label>
-                    <select name="rol" style={{...pastryStyles.input, backgroundColor: 'white'}}>
-                        <option value="user">Cliente (Comensal)</option>
-                        <option value="admin">Administrador (Chef)</option>
-                    </select>
-                </div>
-                <div style={{ gridColumn: '1 / -1', marginTop: '1rem' }}>
-                    <button type="submit" style={pastryStyles.primaryButton}>Registrar Usuario</button>
-                    {msg && <p style={{
-                        marginTop: '1rem',
-                        color: msg.type === 'success' ? '#28a745' : '#dc3545',
-                        fontWeight: 'bold',
-                        textAlign: 'center'
-                    }}>{msg.text}</p>}
-                </div>
-            </form>
+                <hr style={{borderColor:'#E6C9A8', opacity:0.3, margin:'1rem 0 2rem 0'}}/>
+                <form onSubmit={handleSubmit} style={pastryStyles.formGrid}>
+                    <div style={pastryStyles.formGroup}>
+                        <label style={pastryStyles.label}>Nombre</label>
+                        <input name="nombre" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} style={pastryStyles.input} required />
+                    </div>
+                    <div style={pastryStyles.formGroup}>
+                        <label style={pastryStyles.label}>Email</label>
+                        <input name="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} type="email" style={pastryStyles.input} required />
+                    </div>
+                    <div style={pastryStyles.formGroup}>
+                        <label style={pastryStyles.label}>{isEditing ? "Contraseña (Opcional)" : "Contraseña"}</label>
+                        <input name="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} type="password" style={pastryStyles.input} required={!isEditing} minLength={6} />
+                    </div>
+                    <div style={pastryStyles.formGroup}>
+                        <label style={pastryStyles.label}>Fecha Nacimiento</label>
+                        <input name="fechaNacimiento" value={formData.fechaNacimiento} onChange={e => setFormData({...formData, fechaNacimiento: e.target.value})} type="date" style={pastryStyles.input} required />
+                    </div>
+                    <div style={pastryStyles.formGroup}>
+                        <label style={pastryStyles.label}>Rol</label>
+                        <select name="rol" value={formData.rol} onChange={e => setFormData({...formData, rol: e.target.value})} style={{...pastryStyles.input, backgroundColor: 'white'}}>
+                            <option value="user">Cliente</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1', marginTop: '1rem' }}>
+                        <button type="submit" style={pastryStyles.primaryButton}>{isEditing ? "💾 Guardar Cambios" : "✨ Registrar"}</button>
+                        {msg && <p style={{marginTop:'1rem', textAlign:'center', color: msg.type === 'success' ? 'green' : 'red', fontWeight:'bold'}}>{msg.text}</p>}
+                    </div>
+                </form>
+            </div>
+            <div style={pastryStyles.card}>
+                <h3 style={pastryStyles.cardTitle}>👥 Lista de Usuarios</h3>
+                {isLoadingList ? <p className="text-center">Cargando...</p> : (
+                    <div style={{overflowX:'auto'}}>
+                        <table style={{width:'100%', borderCollapse:'collapse', minWidth:'600px'}}>
+                            <thead>
+                            <tr style={{borderBottom:'2px solid #D2691E', color:'#8B4513'}}>
+                                <th style={{padding:'10px', textAlign:'left'}}>Nombre</th>
+                                <th style={{padding:'10px', textAlign:'left'}}>Email</th>
+                                <th style={{padding:'10px', textAlign:'left'}}>Rol</th>
+                                <th style={{padding:'10px', textAlign:'center'}}>Acciones</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {users.map(u => (
+                                <tr key={u.id} style={{borderBottom:'1px solid #eee'}}>
+                                    <td style={{padding:'10px', color:'#5D4037'}}>{u.name}</td>
+                                    <td style={{padding:'10px', color:'#666'}}>{u.email}</td>
+                                    <td style={{padding:'10px'}}>{u.rol === 'admin' ? '👨‍🍳 Chef' : '👤 Cliente'}</td>
+                                    <td style={{padding:'10px', textAlign:'center'}}>
+                                        <button onClick={() => handleEditClick(u)} style={{marginRight:10, border:'none', background:'none', cursor:'pointer'}}>✏️</button>
+                                        <button onClick={() => handleDeleteClick(u.id)} style={{border:'none', background:'none', cursor:'pointer'}}>🗑️</button>
+                                    </td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
 
-/** Pestaña 3: Productos */
-function ProductCreateForm() {
+/**
+ * PESTAÑA 3: GESTIÓN DE PRODUCTOS
+ * (Refactorizada con CRUD completo)
+ */
+function ProductManagementPanel() {
     const [msg, setMsg] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
     const [loading, setLoading] = useState(false);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [isEditing, setIsEditing] = useState(false);
+
+    // Estado del formulario
+    const [formData, setFormData] = useState({
+        id: 0,
+        codigo: '',
+        nombre: '',
+        categoria: '',
+        precio: '', // string para el input, se convierte al enviar
+        stock: 10,
+        descripcion: '',
+        imagen: '',
+        destacado: false
+    });
+
+    const categorias = [
+        "Tortas Cuadradas", "Tortas Circulares", "Postres Individuales",
+        "Productos Sin Azúcar", "Pastelería Tradicional", "Productos Sin Gluten",
+        "Productos Vegana", "Tortas Especiales"
+    ];
+
+    useEffect(() => { fetchProducts(); }, []);
+
+    const fetchProducts = async () => {
+        try {
+            const { data } = await api.get<Product[]>('/products');
+            setProducts(data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const resetForm = () => {
+        setFormData({
+            id: 0, codigo: '', nombre: '', categoria: '', precio: '',
+            stock: 10, descripcion: '', imagen: '', destacado: false
+        });
+        setIsEditing(false);
+        setMsg(null);
+    };
+
+    const handleEditClick = (prod: Product) => {
+        setMsg(null);
+        setIsEditing(true);
+        setFormData({
+            id: prod.id,
+            codigo: prod.codigo,
+            nombre: prod.nombre,
+            categoria: prod.categoria,
+            precio: String(prod.precio),
+            stock: 10, // Stock no viene en entity por defecto, asumimos 10 o ajustar DTO
+            descripcion: prod.descripcion,
+            imagen: prod.imagen,
+            destacado: prod.destacado
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDeleteClick = async (id: number) => {
+        if (!confirm("¿Eliminar este producto del catálogo?")) return;
+        try {
+            await api.delete(`/products/${id}`);
+            setMsg({ text: "🗑️ Producto eliminado.", type: 'success' });
+            setProducts(prev => prev.filter(p => p.id !== id));
+        } catch (error) {
+            setMsg({ text: "❌ Error al eliminar producto.", type: 'error' });
+        }
+    };
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
         setMsg(null);
-        const formData = new FormData(e.currentTarget);
 
         const payload = {
-            codigo: String(formData.get("codigo")).trim(),
-            nombre: String(formData.get("nombre")).trim(),
-            categoria: String(formData.get("categoria")),
-            precio: Number(formData.get("precio")),
-            descripcion: String(formData.get("descripcion")).trim(),
-            imagen: String(formData.get("imagen")).trim(),
-            destacado: formData.get("destacado") === 'on'
+            codigo: formData.codigo.trim(),
+            nombre: formData.nombre.trim(),
+            categoria: formData.categoria,
+            precio: Number(formData.precio),
+            descripcion: formData.descripcion.trim(),
+            imagen: formData.imagen.trim(),
+            destacado: formData.destacado
         };
 
         if (payload.precio < 0) {
@@ -239,9 +458,15 @@ function ProductCreateForm() {
         }
 
         try {
-            await api.post('/products', payload);
-            setMsg({ text: "✅ ¡Producto horneado y listo en catálogo!", type: 'success' });
-            (e.target as HTMLFormElement).reset();
+            if (isEditing) {
+                await api.patch(`/products/${formData.id}`, payload);
+                setMsg({ text: "✅ Producto actualizado correctamente.", type: 'success' });
+            } else {
+                await api.post('/products', payload);
+                setMsg({ text: "✅ ¡Producto horneado y listo!", type: 'success' });
+            }
+            resetForm();
+            setTimeout(fetchProducts, 300);
         } catch (error: any) {
             const errorMsg = error.response?.data?.message
                 ? (Array.isArray(error.response.data.message) ? error.response.data.message.join(', ') : error.response.data.message)
@@ -252,139 +477,255 @@ function ProductCreateForm() {
         }
     };
 
-    const categorias = [
-        "Tortas Cuadradas", "Tortas Circulares", "Postres Individuales",
-        "Productos Sin Azúcar", "Pastelería Tradicional", "Productos Sin Gluten",
-        "Productos Vegana", "Tortas Especiales"
-    ];
-
     return (
-        <div style={pastryStyles.card}>
-            <h3 style={pastryStyles.cardTitle}>🍰 Nuevo Producto para Vitrina</h3>
-            <form onSubmit={handleSubmit} style={pastryStyles.formGrid}>
-                <div style={pastryStyles.formGroup}>
-                    <label style={pastryStyles.label}>Código (SKU)</label>
-                    <input name="codigo" placeholder="Ej: T-CHO-01" style={pastryStyles.input} required minLength={3} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={pastryStyles.card}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                    <h3 style={{...pastryStyles.cardTitle, marginBottom:0, borderBottom:'none'}}>
+                        {isEditing ? "🍰 Editar Pastel" : "🍰 Nuevo Producto"}
+                    </h3>
+                    {isEditing && <button onClick={resetForm} style={pastryStyles.secondaryButton}>Cancelar</button>}
                 </div>
-                <div style={pastryStyles.formGroup}>
-                    <label style={pastryStyles.label}>Nombre del Pastel</label>
-                    <input name="nombre" style={pastryStyles.input} required />
+                <hr style={{borderColor:'#E6C9A8', opacity:0.3, margin:'1rem 0 2rem 0'}}/>
+
+                <form onSubmit={handleSubmit} style={pastryStyles.formGrid}>
+                    <div style={pastryStyles.formGroup}>
+                        <label style={pastryStyles.label}>Código (SKU)</label>
+                        <input name="codigo" value={formData.codigo} onChange={e => setFormData({...formData, codigo: e.target.value})} placeholder="Ej: T-CHO-01" style={pastryStyles.input} required minLength={3} />
+                    </div>
+                    <div style={pastryStyles.formGroup}>
+                        <label style={pastryStyles.label}>Nombre</label>
+                        <input name="nombre" value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} style={pastryStyles.input} required />
+                    </div>
+                    <div style={pastryStyles.formGroup}>
+                        <label style={pastryStyles.label}>Precio ($)</label>
+                        <input name="precio" type="number" value={formData.precio} onChange={e => setFormData({...formData, precio: e.target.value})} style={pastryStyles.input} required />
+                    </div>
+                    <div style={pastryStyles.formGroup}>
+                        <label style={pastryStyles.label}>Categoría</label>
+                        <select name="categoria" value={formData.categoria} onChange={e => setFormData({...formData, categoria: e.target.value})} style={{...pastryStyles.input, backgroundColor: 'white'}} required>
+                            <option value="" disabled>Selecciona...</option>
+                            {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                    </div>
+                    <div style={{...pastryStyles.formGroup, gridColumn: '1 / -1'}}>
+                        <label style={pastryStyles.label}>Descripción</label>
+                        <textarea name="descripcion" value={formData.descripcion} onChange={e => setFormData({...formData, descripcion: e.target.value})} style={pastryStyles.textarea} rows={3}></textarea>
+                    </div>
+                    <div style={{...pastryStyles.formGroup, gridColumn: '1 / -1'}}>
+                        <label style={pastryStyles.label}>URL Imagen</label>
+                        <input name="imagen" value={formData.imagen} onChange={e => setFormData({...formData, imagen: e.target.value})} type="text" style={pastryStyles.input} placeholder="https://..." />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <input type="checkbox" checked={formData.destacado} onChange={e => setFormData({...formData, destacado: e.target.checked})} id="destacado" style={{width:'20px', height:'20px', accentColor:'#D2691E'}} />
+                        <label htmlFor="destacado" style={{...pastryStyles.label, marginBottom: 0, cursor:'pointer'}}>Destacar en Vitrina</label>
+                    </div>
+                    <div style={{ gridColumn: '1 / -1', textAlign: 'center' }}>
+                        <button type="submit" style={pastryStyles.primaryButton} disabled={loading}>
+                            {loading ? "Horneando..." : (isEditing ? "Guardar Cambios" : "Guardar Producto")}
+                        </button>
+                        {msg && <div style={{marginTop: '1rem', padding: '10px', borderRadius: '10px', backgroundColor: msg.type === 'success' ? '#d4edda' : '#f8d7da', color: msg.type === 'success' ? '#155724' : '#721c24'}}>{msg.text}</div>}
+                    </div>
+                </form>
+            </div>
+
+            {/* Lista Productos */}
+            <div style={pastryStyles.card}>
+                <h3 style={pastryStyles.cardTitle}>📋 Catálogo Actual</h3>
+                <div style={{overflowX:'auto'}}>
+                    <table style={{width:'100%', borderCollapse:'collapse', minWidth:'600px'}}>
+                        <thead>
+                        <tr style={{borderBottom:'2px solid #D2691E', color:'#8B4513'}}>
+                            <th style={{padding:'10px', textAlign:'left'}}>SKU</th>
+                            <th style={{padding:'10px', textAlign:'left'}}>Producto</th>
+                            <th style={{padding:'10px', textAlign:'left'}}>Precio</th>
+                            <th style={{padding:'10px', textAlign:'center'}}>Acciones</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {products.map(p => (
+                            <tr key={p.id} style={{borderBottom:'1px solid #eee'}}>
+                                <td style={{padding:'10px', color:'#666', fontSize:'0.9rem'}}>{p.codigo}</td>
+                                <td style={{padding:'10px', color:'#5D4037', fontWeight:'bold'}}>
+                                    {p.nombre} {p.destacado && '⭐'}
+                                </td>
+                                <td style={{padding:'10px', color:'#28a745'}}>${p.precio.toLocaleString()}</td>
+                                <td style={{padding:'10px', textAlign:'center'}}>
+                                    <button onClick={() => handleEditClick(p)} style={{marginRight:10, border:'none', background:'none', cursor:'pointer'}}>✏️</button>
+                                    <button onClick={() => handleDeleteClick(p.id)} style={{border:'none', background:'none', cursor:'pointer'}}>🗑️</button>
+                                </td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
                 </div>
-                <div style={pastryStyles.formGroup}>
-                    <label style={pastryStyles.label}>Precio ($)</label>
-                    <input name="precio" type="number" style={pastryStyles.input} required />
-                </div>
-                <div style={pastryStyles.formGroup}>
-                    <label style={pastryStyles.label}>Stock Inicial</label>
-                    <input name="stock" type="number" style={pastryStyles.input} defaultValue={10} />
-                </div>
-                <div style={pastryStyles.formGroup}>
-                    <label style={pastryStyles.label}>Categoría</label>
-                    <select name="categoria" style={{...pastryStyles.input, backgroundColor: 'white'}} required>
-                        <option value="" disabled selected>Selecciona una categoría...</option>
-                        {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                    </select>
-                </div>
-                <div style={{...pastryStyles.formGroup, gridColumn: '1 / -1'}}>
-                    <label style={pastryStyles.label}>Descripción Tentadora</label>
-                    <textarea name="descripcion" style={pastryStyles.textarea} rows={3}></textarea>
-                </div>
-                <div style={{...pastryStyles.formGroup, gridColumn: '1 / -1'}}>
-                    <label style={pastryStyles.label}>URL de la Imagen</label>
-                    <input name="imagen" type="url" style={pastryStyles.input} placeholder="https://..." />
-                </div>
-                <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0' }}>
-                    <input type="checkbox" name="destacado" id="destacado" style={{width: '20px', height: '20px', accentColor: '#D2691E'}} />
-                    <label htmlFor="destacado" style={{...pastryStyles.label, marginBottom: 0, cursor: 'pointer'}}>Destacar en Vitrina Principal</label>
-                </div>
-                <div style={{ gridColumn: '1 / -1', textAlign: 'center' }}>
-                    <button type="submit" style={pastryStyles.primaryButton} disabled={loading}>
-                        {loading ? "Horneando..." : "Guardar Producto"}
-                    </button>
-                    {msg && <div style={{
-                        marginTop: '1rem', padding: '10px', borderRadius: '10px',
-                        backgroundColor: msg.type === 'success' ? '#d4edda' : '#f8d7da',
-                        color: msg.type === 'success' ? '#155724' : '#721c24'
-                    }}>{msg.text}</div>}
-                </div>
-            </form>
+            </div>
         </div>
     );
 }
 
-/** Pestaña 4: Blog */
-function BlogCreateForm() {
+/**
+ * PESTAÑA 4: GESTIÓN DE BLOG
+ * (Refactorizada con CRUD completo)
+ */
+function BlogManagementPanel() {
     const [msg, setMsg] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
     const [loading, setLoading] = useState(false);
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [isEditing, setIsEditing] = useState(false);
+
+    const [formData, setFormData] = useState({
+        id: 0,
+        titulo: '',
+        contenido: '',
+        autor: 'Chef Mil Sabores',
+        categoria: 'Recetas',
+        imagen: ''
+    });
+
+    useEffect(() => { fetchPosts(); }, []);
+
+    const fetchPosts = async () => {
+        try {
+            const { data } = await api.get<Post[]>('/posts');
+            setPosts(data);
+        } catch (error) { console.error(error); }
+    };
+
+    const resetForm = () => {
+        setFormData({ id: 0, titulo: '', contenido: '', autor: 'Chef Mil Sabores', categoria: 'Recetas', imagen: '' });
+        setIsEditing(false);
+        setMsg(null);
+    };
+
+    const handleEditClick = (post: Post) => {
+        setMsg(null);
+        setIsEditing(true);
+        setFormData({
+            id: post.id,
+            titulo: post.titulo,
+            contenido: post.contenido,
+            autor: post.autor || '',
+            categoria: post.categoria || 'Recetas',
+            imagen: post.imagen || ''
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleDeleteClick = async (id: number) => {
+        if (!confirm("¿Eliminar este artículo del blog?")) return;
+        try {
+            await api.delete(`/posts/${id}`);
+            setMsg({ text: "🗑️ Artículo eliminado.", type: 'success' });
+            setPosts(prev => prev.filter(p => p.id !== id));
+        } catch (error) { setMsg({ text: "❌ Error al eliminar.", type: 'error' }); }
+    };
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
         setMsg(null);
-        const formData = new FormData(e.currentTarget);
+
         const postData = {
-            titulo: formData.get("titulo"),
-            contenido: formData.get("contenido"),
-            autor: formData.get("autor"),
-            categoria: formData.get("categoria"),
-            imagen: formData.get("imagen")
+            titulo: formData.titulo,
+            contenido: formData.contenido,
+            autor: formData.autor,
+            categoria: formData.categoria,
+            imagen: formData.imagen
         };
 
         try {
-            await api.post('/posts', postData);
-            setMsg({ text: "✅ Receta publicada con éxito.", type: 'success' });
-            (e.target as HTMLFormElement).reset();
+            if (isEditing) {
+                await api.patch(`/posts/${formData.id}`, postData);
+                setMsg({ text: "✅ Artículo actualizado.", type: 'success' });
+            } else {
+                await api.post('/posts', postData);
+                setMsg({ text: "✅ Historia publicada.", type: 'success' });
+            }
+            resetForm();
+            setTimeout(fetchPosts, 300);
         } catch (error) {
-            setMsg({ text: "❌ Error al publicar la historia.", type: 'error' });
+            setMsg({ text: "❌ Error al procesar el artículo.", type: 'error' });
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={pastryStyles.card}>
-            <h3 style={pastryStyles.cardTitle}>📝 Escribir en el Blog Dulce</h3>
-            <form onSubmit={handleSubmit} style={pastryStyles.formGrid}>
-                <div style={{...pastryStyles.formGroup, gridColumn: '1 / -1'}}>
-                    <label style={pastryStyles.label}>Título del Artículo</label>
-                    <input name="titulo" style={pastryStyles.input} placeholder="Ej: Secretos del Merengue Perfecto" required />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div style={pastryStyles.card}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                    <h3 style={{...pastryStyles.cardTitle, marginBottom:0, borderBottom:'none'}}>
+                        {isEditing ? "📝 Editar Artículo" : "📝 Escribir en Blog"}
+                    </h3>
+                    {isEditing && <button onClick={resetForm} style={pastryStyles.secondaryButton}>Cancelar</button>}
                 </div>
-                <div style={pastryStyles.formGroup}>
-                    <label style={pastryStyles.label}>Tipo de Contenido</label>
-                    <select name="categoria" style={{...pastryStyles.input, backgroundColor: 'white'}}>
-                        <option value="Recetas">Receta</option>
-                        <option value="Tips">Tip de Cocina</option>
-                        <option value="Historia">Historia</option>
-                        <option value="Eventos">Evento</option>
-                    </select>
+                <hr style={{borderColor:'#E6C9A8', opacity:0.3, margin:'1rem 0 2rem 0'}}/>
+
+                <form onSubmit={handleSubmit} style={pastryStyles.formGrid}>
+                    <div style={{...pastryStyles.formGroup, gridColumn: '1 / -1'}}>
+                        <label style={pastryStyles.label}>Título</label>
+                        <input name="titulo" value={formData.titulo} onChange={e => setFormData({...formData, titulo: e.target.value})} style={pastryStyles.input} required />
+                    </div>
+                    <div style={pastryStyles.formGroup}>
+                        <label style={pastryStyles.label}>Categoría</label>
+                        <select name="categoria" value={formData.categoria} onChange={e => setFormData({...formData, categoria: e.target.value})} style={{...pastryStyles.input, backgroundColor: 'white'}}>
+                            <option value="Recetas">Receta</option>
+                            <option value="Tips">Tip de Cocina</option>
+                            <option value="Historia">Historia</option>
+                            <option value="Eventos">Evento</option>
+                        </select>
+                    </div>
+                    <div style={pastryStyles.formGroup}>
+                        <label style={pastryStyles.label}>Autor</label>
+                        <input name="autor" value={formData.autor} onChange={e => setFormData({...formData, autor: e.target.value})} style={pastryStyles.input} />
+                    </div>
+                    <div style={{...pastryStyles.formGroup, gridColumn: '1 / -1'}}>
+                        <label style={pastryStyles.label}>Contenido</label>
+                        <textarea name="contenido" value={formData.contenido} onChange={e => setFormData({...formData, contenido: e.target.value})} style={pastryStyles.textarea} rows={8}></textarea>
+                    </div>
+                    <div style={{...pastryStyles.formGroup, gridColumn: '1 / -1'}}>
+                        <label style={pastryStyles.label}>Portada (URL o Emoji 🎂)</label>
+                        <input name="imagen" value={formData.imagen} onChange={e => setFormData({...formData, imagen: e.target.value})} type="text" style={pastryStyles.input} />
+                    </div>
+                    <div style={{ gridColumn: '1 / -1', textAlign: 'center' }}>
+                        <button type="submit" style={pastryStyles.primaryButton} disabled={loading}>
+                            {loading ? "Procesando..." : (isEditing ? "Actualizar Entrada" : "Publicar Entrada")}
+                        </button>
+                        {msg && <p style={{marginTop:'1rem', color: msg.type === 'success' ? 'green' : 'red', fontWeight:'bold'}}>{msg.text}</p>}
+                    </div>
+                </form>
+            </div>
+
+            <div style={pastryStyles.card}>
+                <h3 style={pastryStyles.cardTitle}>📚 Entradas Publicadas</h3>
+                <div style={{overflowX:'auto'}}>
+                    <table style={{width:'100%', borderCollapse:'collapse', minWidth:'600px'}}>
+                        <thead>
+                        <tr style={{borderBottom:'2px solid #D2691E', color:'#8B4513'}}>
+                            <th style={{padding:'10px', textAlign:'left'}}>Título</th>
+                            <th style={{padding:'10px', textAlign:'left'}}>Categoría</th>
+                            <th style={{padding:'10px', textAlign:'center'}}>Acciones</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {posts.map(p => (
+                            <tr key={p.id} style={{borderBottom:'1px solid #eee'}}>
+                                <td style={{padding:'10px', color:'#5D4037', fontWeight:'bold'}}>
+                                    {p.imagen && <span style={{marginRight:'5px'}}>{p.imagen.length < 5 ? p.imagen : '🖼️'}</span>}
+                                    {p.titulo}
+                                </td>
+                                <td style={{padding:'10px', color:'#666'}}>{p.categoria}</td>
+                                <td style={{padding:'10px', textAlign:'center'}}>
+                                    <button onClick={() => handleEditClick(p)} style={{marginRight:10, border:'none', background:'none', cursor:'pointer'}}>✏️</button>
+                                    <button onClick={() => handleDeleteClick(p.id)} style={{border:'none', background:'none', cursor:'pointer'}}>🗑️</button>
+                                </td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
                 </div>
-                <div style={pastryStyles.formGroup}>
-                    <label style={pastryStyles.label}>Autor</label>
-                    <input name="autor" style={pastryStyles.input} defaultValue="Chef Mil Sabores" />
-                </div>
-                <div style={{...pastryStyles.formGroup, gridColumn: '1 / -1'}}>
-                    <label style={pastryStyles.label}>Contenido</label>
-                    <textarea name="contenido" style={pastryStyles.textarea} rows={8} placeholder="Érase una vez..."></textarea>
-                </div>
-                <div style={{...pastryStyles.formGroup, gridColumn: '1 / -1'}}>
-                    <label style={pastryStyles.label}>Portada (URL de imagen o Emoji)</label>
-                    <input
-                        name="imagen"
-                        type="text" // Cambiado a 'text' para permitir Emojis
-                        style={pastryStyles.input}
-                        placeholder="Utilize emoji 🎂"
-                    />
-                    <small style={{color: '#8b5a2b', fontStyle: 'italic', marginTop: '5px'}}>
-                        Tip: Puedes pegar una URL de foto o simplemente usar un emoji para destacar.
-                    </small>
-                </div>
-                <div style={{ gridColumn: '1 / -1', textAlign: 'center' }}>
-                    <button type="submit" style={pastryStyles.primaryButton} disabled={loading}>
-                        {loading ? "Publicando..." : "Publicar Entrada"}
-                    </button>
-                    {msg && <p style={{marginTop:'1rem', color: msg.type === 'success' ? 'green' : 'red', fontWeight:'bold'}}>{msg.text}</p>}
-                </div>
-            </form>
+            </div>
         </div>
     );
 }
@@ -400,33 +741,35 @@ const pastryStyles = {
         paddingBottom: '1rem'
     },
     title: {
-        color: '#8B4513', // Chocolate saddlebrown
-        fontFamily: '"Playfair Display", serif', // Fuente elegante si está disponible
+        color: '#8B4513',
+        fontFamily: '"Playfair Display", serif',
         fontSize: '2rem',
         fontWeight: 'bold'
     },
     subtitle: {
-        color: '#A0522D', // Sienna
+        color: '#A0522D',
         fontSize: '1.5rem',
         marginBottom: '1.5rem',
         borderLeft: '4px solid #D2691E',
         paddingLeft: '10px'
     },
     secondaryButton: {
-        backgroundColor: '#F5DEB3', // Wheat
+        backgroundColor: '#F5DEB3',
         color: '#8B4513',
         padding: '10px 20px',
         borderRadius: '20px',
         textDecoration: 'none',
         fontWeight: 'bold',
-        transition: '0.3s'
+        transition: '0.3s',
+        border: 'none',
+        cursor: 'pointer'
     },
     tabsContainer: {
         display: 'flex',
         gap: '15px',
         marginBottom: '2.5rem',
         padding: '10px',
-        backgroundColor: '#FFF8DC', // Cornsilk
+        backgroundColor: '#FFF8DC',
         borderRadius: '25px',
         overflowX: 'auto' as const,
         justifyContent: 'center'
@@ -440,15 +783,15 @@ const pastryStyles = {
         transition: 'all 0.3s ease',
         whiteSpace: 'nowrap' as const
     },
-    // --- ESTILOS DE TARJETA FORMULARIO ---
     card: {
-        backgroundColor: '#FFFCF5', // Crema muy suave
+        backgroundColor: '#FFFCF5',
         borderRadius: '20px',
         padding: '2.5rem',
-        boxShadow: '0 10px 25px rgba(139, 69, 19, 0.1)', // Sombra chocolate suave
+        boxShadow: '0 10px 25px rgba(139, 69, 19, 0.1)',
         border: '1px solid #F0E6D2',
         maxWidth: '800px',
-        margin: '0 auto'
+        margin: '0 auto',
+        width: '100%'
     },
     cardTitle: {
         textAlign: 'center' as const,
@@ -498,7 +841,7 @@ const pastryStyles = {
         resize: 'vertical' as const
     },
     primaryButton: {
-        backgroundColor: '#D2691E', // Chocolate
+        backgroundColor: '#D2691E',
         color: 'white',
         border: 'none',
         padding: '14px 40px',
