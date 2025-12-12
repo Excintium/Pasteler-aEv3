@@ -84,7 +84,7 @@ export default function Home() {
                 <h3 className="section-title">Productos Destacados</h3>
                 <div className="products-grid" id="featured-products">
                     {productosDestacados.map((producto) => (
-                        <ProductCard 
+                        <ProductCard
                             key={producto.codigo}
                             product={producto}
                             onView={handleViewProduct}
@@ -115,10 +115,10 @@ export default function Home() {
                 </div>
             </div>
 
-            <ProductModal 
-                isOpen={modalOpen} 
-                onClose={handleCloseModal} 
-                product={selectedProduct} 
+            <ProductModal
+                isOpen={modalOpen}
+                onClose={handleCloseModal}
+                product={selectedProduct}
             />
         </section>
     );

@@ -8,10 +8,6 @@ export interface Producto {
     destacado?: boolean;
 }
 
-
-
-
-
 export const PRODUCTOS: Producto[] = [
     {
         codigo: "TC001",
