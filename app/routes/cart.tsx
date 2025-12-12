@@ -6,8 +6,6 @@ import { Link, useNavigate } from "react-router";
 import { useNotification } from "~/services/notification-context";
 import { getProductImageUrl } from "~/utils/formatters";
 
-// Nivel de documentación: Semi-senior
-
 export function meta({}: Route.MetaArgs) {
     return [{ title: "Carrito - Pastelería Mil Sabores" }];
 }
