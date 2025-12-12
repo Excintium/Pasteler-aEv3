@@ -1,9 +1,10 @@
 import { useState } from "react";
 import type { Route } from "./+types/cart";
 import { useCart } from "~/services/cart-context";
+import { useAuth } from "~/services/auth-context"; // Importamos Auth
 import { Link, useNavigate } from "react-router";
 import { useNotification } from "~/services/notification-context";
-import { getProductImageUrl } from "~/utils/formatters"; //
+import { getProductImageUrl } from "~/utils/formatters";
 
 // Nivel de documentación: Semi-senior
 
@@ -11,23 +12,46 @@ export function meta({}: Route.MetaArgs) {
     return [{ title: "Carrito - Pastelería Mil Sabores" }];
 }
 
+// Interfaz para la data de la boleta
+interface BoletaData {
+    fecha: string;
+    items: ReturnType<typeof useCart>['items'];
+    subtotal: number;
+    descuento: number;
+    total: number;
+    cliente: string;
+    esMayor: boolean;
+}
+
 export default function CartPage() {
-    const { items, totalItems, totalPrice, removeFromCart, clearCart } = useCart();
+    // Obtenemos funciones del carrito, incluyendo la nueva decreaseQuantity
+    const { items, totalItems, subtotalPrice, addToCart, decreaseQuantity, removeFromCart, clearCart } = useCart();
+    const { usuarioActual } = useAuth(); // Obtenemos el usuario para verificar rol
     const { showNotification } = useNotification();
     const navigate = useNavigate();
 
     // Estado para controlar la visibilidad del modal de boleta
     const [showBoleta, setShowBoleta] = useState(false);
-    const [boletaData, setBoletaData] = useState<{ fecha: string; items: typeof items; total: number } | null>(null);
+    const [boletaData, setBoletaData] = useState<BoletaData | null>(null);
+
+    // Lógica de Negocio: Descuentos
+    const esAdultoMayor = usuarioActual?.tipoUsuario === "mayor";
+    const porcentajeDescuento = esAdultoMayor ? 0.50 : 0; // 50%
+    const montoDescuento = subtotalPrice * porcentajeDescuento;
+    const totalFinal = subtotalPrice - montoDescuento;
 
     const handleProcesarCompra = () => {
         if (items.length === 0) return;
 
-        // Preparamos los datos para la boleta antes de mostrarla
+        // Preparamos los datos snapshot para la boleta
         setBoletaData({
             fecha: new Date().toLocaleString("es-CL"),
-            items: [...items], // Copia de seguridad de los items actuales
-            total: totalPrice,
+            items: [...items],
+            subtotal: subtotalPrice,
+            descuento: montoDescuento,
+            total: totalFinal,
+            cliente: usuarioActual?.nombre || "Cliente General",
+            esMayor: esAdultoMayor
         });
         setShowBoleta(true);
     };
@@ -49,7 +73,7 @@ export default function CartPage() {
                     </div>
                     <h2 className="section-title">Tu carrito está vacío</h2>
                     <p style={{ marginBottom: '2rem', fontSize: '1.1rem', color: '#666' }}>Parece que aún no has elegido ninguna de nuestras delicias.</p>
-                    <Link to="/productos" className="btn-primary">
+                    <Link to="/products" className="btn-primary">
                         <i className="fas fa-store"></i> Ir al Catálogo
                     </Link>
                 </div>
@@ -62,12 +86,23 @@ export default function CartPage() {
             <div className="container">
                 <h2 className="section-title">Tu Carrito de Compras</h2>
 
+                {/* Banner informativo de descuento si aplica */}
+                {esAdultoMayor && (
+                    <div style={{
+                        backgroundColor: '#d4edda', color: '#155724', padding: '1rem',
+                        borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid #c3e6cb',
+                        display: 'flex', alignItems: 'center', gap: '10px'
+                    }}>
+                        <i className="fas fa-percent"></i>
+                        <strong>¡Felicidades!</strong> Se está aplicando un 50% de descuento por ser Adulto Mayor.
+                    </div>
+                )}
+
                 <div className="cart-container">
                     {/* Lista de Items */}
                     <div className="cart-items">
                         {items.map((item) => (
                             <article key={item.codigo} className="cart-item">
-                                {/* CORRECCIÓN: Uso de getProductImageUrl para cargar la imagen correctamente */}
                                 <img
                                     src={getProductImageUrl(item.imagen)}
                                     alt={item.nombre}
@@ -83,9 +118,27 @@ export default function CartPage() {
                                         {item.descripcion.substring(0, 60)}...
                                     </p>
 
-                                    <div className="cart-item-controls">
-                                        <span className="quantity-display">Cant: {item.quantity}</span>
-                                        <span className="cart-item-price" style={{ marginLeft: '1rem', fontWeight: 'bold', color: 'var(--color-chocolate)' }}>
+                                    <div className="cart-item-controls" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
+                                        {/* Controles de cantidad */}
+                                        <div className="quantity-controls" style={{ display: 'flex', alignItems: 'center', border: '1px solid #ddd', borderRadius: '4px' }}>
+                                            <button
+                                                onClick={() => decreaseQuantity(item.codigo)}
+                                                style={{ padding: '5px 10px', background: '#f8f9fa', border: 'none', cursor: 'pointer', borderRight: '1px solid #ddd' }}
+                                                aria-label="Disminuir cantidad"
+                                            >
+                                                <i className="fas fa-minus" style={{ fontSize: '0.8rem' }}></i>
+                                            </button>
+                                            <span style={{ padding: '5px 12px', fontWeight: 'bold' }}>{item.quantity}</span>
+                                            <button
+                                                onClick={() => addToCart(item)}
+                                                style={{ padding: '5px 10px', background: '#f8f9fa', border: 'none', cursor: 'pointer', borderLeft: '1px solid #ddd' }}
+                                                aria-label="Aumentar cantidad"
+                                            >
+                                                <i className="fas fa-plus" style={{ fontSize: '0.8rem' }}></i>
+                                            </button>
+                                        </div>
+
+                                        <span className="cart-item-price" style={{ fontWeight: 'bold', color: 'var(--color-chocolate)' }}>
                                             ${(item.precio * item.quantity).toLocaleString("es-CL")}
                                         </span>
                                     </div>
@@ -104,17 +157,27 @@ export default function CartPage() {
                     {/* Resumen del Pedido */}
                     <div className="cart-summary summary-card">
                         <h3>Resumen del Pedido</h3>
+
                         <div className="summary-line">
-                            <span>Productos ({totalItems})</span>
-                            <span>${totalPrice.toLocaleString("es-CL")}</span>
+                            <span>Subtotal ({totalItems} prod.)</span>
+                            <span>${subtotalPrice.toLocaleString("es-CL")}</span>
                         </div>
+
+                        {esAdultoMayor && (
+                            <div className="summary-line" style={{ color: '#28a745' }}>
+                                <span>Desc. Adulto Mayor (50%)</span>
+                                <span>-${montoDescuento.toLocaleString("es-CL")}</span>
+                            </div>
+                        )}
+
                         <div className="summary-line">
                             <span>Envío</span>
                             <span style={{ color: 'green', fontWeight: 'bold' }}>Gratis</span>
                         </div>
-                        <div className="summary-line total">
-                            <span>Total</span>
-                            <span>${totalPrice.toLocaleString("es-CL")}</span>
+
+                        <div className="summary-line total" style={{ borderTop: '2px solid #eee', paddingTop: '10px', marginTop: '10px' }}>
+                            <span>Total a Pagar</span>
+                            <span>${totalFinal.toLocaleString("es-CL")}</span>
                         </div>
 
                         <button
@@ -135,7 +198,7 @@ export default function CartPage() {
                 </div>
             </div>
 
-            {/* MODAL DE BOLETA (Estilo PokeStore adaptado) */}
+            {/* MODAL DE BOLETA */}
             {showBoleta && boletaData && (
                 <div className="modal-overlay" style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -153,7 +216,7 @@ export default function CartPage() {
                             </h2>
                             <p>RUT: 76.123.456-7</p>
                             <p>Av. Siempre Viva 742, Santiago</p>
-                            <p>Tel: +56 2 2345 6789</p>
+                            <p>Cliente: {boletaData.cliente}</p>
                             <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>{boletaData.fecha}</p>
                         </div>
 
@@ -178,8 +241,18 @@ export default function CartPage() {
                             </table>
                         </div>
 
-                        <div className="boleta-total" style={{ textAlign: 'right', fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '2rem' }}>
-                            <p>TOTAL: ${boletaData.total.toLocaleString("es-CL")}</p>
+                        <div className="boleta-totales" style={{ textAlign: 'right', marginBottom: '2rem' }}>
+                            <p style={{ margin: '5px 0' }}>Subtotal: ${boletaData.subtotal.toLocaleString("es-CL")}</p>
+
+                            {boletaData.esMayor && (
+                                <p style={{ margin: '5px 0', color: '#28a745' }}>
+                                    Desc. A. Mayor: -${boletaData.descuento.toLocaleString("es-CL")}
+                                </p>
+                            )}
+
+                            <p style={{ fontSize: '1.4rem', fontWeight: 'bold', marginTop: '10px', borderTop: '1px dashed #333', paddingTop: '10px' }}>
+                                TOTAL: ${boletaData.total.toLocaleString("es-CL")}
+                            </p>
                         </div>
 
                         <div className="text-center" style={{ fontSize: '0.9rem', fontStyle: 'italic', marginBottom: '1.5rem' }}>
