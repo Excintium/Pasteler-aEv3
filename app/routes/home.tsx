@@ -85,8 +85,8 @@ export default function Home() {
                 <div className="products-grid" id="featured-products">
                     {productosDestacados.map((producto) => (
                         <ProductCard 
-                            key={producto.codigo} 
-                            product={producto} 
+                            key={producto.codigo}
+                            product={producto}
                             onView={handleViewProduct}
                         />
                     ))}

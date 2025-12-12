@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import type { Articulo } from "~/data/blog";
-import { Link } from "react-router"; // <--- 1. Importamos Link
+import { Link } from "react-router";
 
 // Funciones de ayuda
 function truncarTexto(texto: string, limite: number) {

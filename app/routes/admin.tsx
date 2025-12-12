@@ -352,10 +352,10 @@ function BlogCreateForm() {
                 <div style={pastryStyles.formGroup}>
                     <label style={pastryStyles.label}>Tipo de Contenido</label>
                     <select name="categoria" style={{...pastryStyles.input, backgroundColor: 'white'}}>
-                        <option value="Receta">Receta</option>
-                        <option value="Tip">Tip de Cocina</option>
+                        <option value="Recetas">Receta</option>
+                        <option value="Tips">Tip de Cocina</option>
                         <option value="Historia">Historia</option>
-                        <option value="Evento">Evento</option>
+                        <option value="Eventos">Evento</option>
                     </select>
                 </div>
                 <div style={pastryStyles.formGroup}>
@@ -367,8 +367,16 @@ function BlogCreateForm() {
                     <textarea name="contenido" style={pastryStyles.textarea} rows={8} placeholder="Érase una vez..."></textarea>
                 </div>
                 <div style={{...pastryStyles.formGroup, gridColumn: '1 / -1'}}>
-                    <label style={pastryStyles.label}>Imagen de Portada (URL)</label>
-                    <input name="imagen" type="url" style={pastryStyles.input} />
+                    <label style={pastryStyles.label}>Portada (URL de imagen o Emoji)</label>
+                    <input
+                        name="imagen"
+                        type="text" // Cambiado a 'text' para permitir Emojis
+                        style={pastryStyles.input}
+                        placeholder="Utilize emoji 🎂"
+                    />
+                    <small style={{color: '#8b5a2b', fontStyle: 'italic', marginTop: '5px'}}>
+                        Tip: Puedes pegar una URL de foto o simplemente usar un emoji para destacar.
+                    </small>
                 </div>
                 <div style={{ gridColumn: '1 / -1', textAlign: 'center' }}>
                     <button type="submit" style={pastryStyles.primaryButton} disabled={loading}>

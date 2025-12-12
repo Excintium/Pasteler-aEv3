@@ -1,13 +1,13 @@
-// app/data/blog.ts
-
 export type Articulo = {
     id: number;
     titulo: string;
-    categoria: "recetas" | "tips" | "historia" | "eventos";
+    // Permitimos string general para soportar lo que venga de BD,
+    // aunque idealmente debería ser un Union Type estricto si validamos en ambos lados.
+    categoria: string;
     contenido: string;
-    fecha: string;   // en formato "2025-11-15" por ejemplo
+    fecha: string;    // Mapearemos 'createdAt' a 'fecha' en la vista
     autor: string;
-    imagen: string;  // puede ser un emoji o una ruta de imagen
+    imagen: string;
 };
 
 export const BLOG_ARTICULOS: Articulo[] = [
