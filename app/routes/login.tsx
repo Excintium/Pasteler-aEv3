@@ -115,19 +115,16 @@ export default function LoginPage() {
                             <div className="demo-user">
                                 <strong>Usuario Mayor:</strong> mayor@gmail.com / password123
                                 <br />
-                                <small>Recibe 50% descuento por edad</small>
                             </div>
 
                             <div className="demo-user">
                                 <strong>Estudiante Duoc:</strong> estudiante@duoc.cl / password123
                                 <br />
-                                <small>Torta gratis en cumpleaños</small>
                             </div>
 
                             <div className="demo-user">
                                 <strong>Usuario Regular:</strong> usuario@gmail.com / password123
                                 <br />
-                                <small>Descuentos aplicables con códigos</small>
                             </div>
                         </ul>
                     </aside>
