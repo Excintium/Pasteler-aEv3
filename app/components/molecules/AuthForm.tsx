@@ -1,9 +1,5 @@
-/**
- * Nivel de documentación: Senior
- * Refactorización: Integración real con AuthContext y eliminación de lógica mock.
- */
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router"; // React Router v6/v7
+import { Link, useNavigate } from "react-router"; // Ajusta si usas 'react-router-dom'
 import { useAuth } from "~/services/auth-context"; // Importamos el contexto real
 
 interface AuthFormProps {
@@ -12,35 +8,53 @@ interface AuthFormProps {
 
 export function AuthForm({ mode }: AuthFormProps) {
     const navigate = useNavigate();
-    const { login, register, error: authError, isLoading } = useAuth(); // Usamos el hook
     const isLogin = mode === "login";
+
+    // 1. Usamos el hook que SÍ conecta con el Backend NestJS
+    const { login, register, error: authError, isLoading } = useAuth();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [nombre, setNombre] = useState("");
-    // Nota: El backend pide 'fechaNacimiento' para calcular rol mayor,
-    // deberías agregar ese input si quieres que la lógica de negocio funcione.
+    const [nombre, setNombre] = useState(""); // Necesario para registro real
+
+    // Estado local para errores de validación de formulario (campos vacíos)
+    const [localError, setLocalError] = useState<string | null>(null);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        setLocalError(null);
+
+        // Validaciones básicas de UI
+        if (!email || !password) {
+            setLocalError("Completa todos los campos");
+            return;
+        }
 
         try {
             if (isLogin) {
+                // 2. Llamada real a la API (POST /auth/login)
                 await login(email, password);
-                navigate("/"); // Redirección tras login exitoso
+                navigate("/");
             } else {
-                // Registro real contra el backend
+                // 3. Llamada real a la API (POST /auth/register)
+                // Nota: El backend espera 'name', 'email', 'password', etc.
+                if (!nombre) {
+                    setLocalError("El nombre es obligatorio para registrarse");
+                    return;
+                }
                 await register({
-                    nombre: nombre || "Usuario Nuevo",
+                    nombre,
                     email,
                     password,
-                    // fechaNacimiento: "1990-01-01" // Agregar input de fecha
+                    // Si el backend requiere fechaNacimiento, agrégala aquí o en el form
+                    // fechaNacimiento: "2000-01-01"
                 });
                 navigate("/");
             }
         } catch (e) {
-            // El error se maneja en el AuthContext, pero podemos hacer log aquí si es necesario
-            console.error("Error en autenticación", e);
+            // El error ya se gestiona en authError del contexto,
+            // pero el catch evita que la app crashee.
+            console.error("Error en operación de auth", e);
         }
     };
 
@@ -51,9 +65,14 @@ export function AuthForm({ mode }: AuthFormProps) {
                     <h2 className="section-title">
                         {isLogin ? "Iniciar Sesión" : "Registro de Usuario"}
                     </h2>
+                    <p className="auth-subtitle">
+                        {isLogin
+                            ? "Ingresa con tu correo y contraseña para ver tus descuentos."
+                            : "Crea tu cuenta para acceder a beneficios exclusivos."}
+                    </p>
 
                     <form className="auth-form" onSubmit={handleSubmit}>
-                        {/* Campo Nombre solo para registro */}
+                        {/* Campo extra para Registro Real */}
                         {!isLogin && (
                             <label className="form-field">
                                 <span>Nombre Completo</span>
@@ -61,8 +80,8 @@ export function AuthForm({ mode }: AuthFormProps) {
                                     type="text"
                                     value={nombre}
                                     onChange={(e) => setNombre(e.target.value)}
-                                    required
-                                    placeholder="Tu nombre"
+                                    placeholder="Juan Pérez"
+                                    required={!isLogin}
                                 />
                             </label>
                         )}
@@ -74,7 +93,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                placeholder="ej: usuario@gmail.com"
+                                placeholder="usuario@gmail.com"
                             />
                         </label>
 
@@ -89,23 +108,28 @@ export function AuthForm({ mode }: AuthFormProps) {
                             />
                         </label>
 
-                        {/* Mostramos errores que vienen del contexto (API) */}
-                        {authError && <p className="form-error">{authError}</p>}
+                        {/* Mostrar errores locales o errores que vienen de la API (AuthContext) */}
+                        {(localError || authError) && (
+                            <p className="form-error">{localError || authError}</p>
+                        )}
 
                         <button
                             type="submit"
                             className="btn-primary auth-submit-btn"
-                            disabled={isLoading}
+                            disabled={isLoading} // Feedback visual de carga
                         >
                             {isLoading ? "Procesando..." : (isLogin ? "Entrar" : "Registrarme")}
                         </button>
 
                         <div className="auth-switch">
-                            {/* ... Links de navegación ... */}
                             {isLogin ? (
-                                <span>¿No tienes cuenta? <Link to="/register">Crear cuenta</Link></span>
+                                <span>
+                                    ¿No tienes cuenta? <Link to="/registro" className="auth-link">Crear una cuenta</Link>
+                                </span>
                             ) : (
-                                <span>¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link></span>
+                                <span>
+                                    ¿Ya tienes cuenta? <Link to="/login" className="auth-link">Inicia sesión</Link>
+                                </span>
                             )}
                         </div>
                     </form>
