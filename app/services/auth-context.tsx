@@ -8,18 +8,14 @@ import {
 import { api } from "./api";
 import type { AxiosError } from "axios";
 
-/**
- * DEFINICIÓN DE TIPOS
- * Actualizado: Se agrega 'admin' explícitamente a los tipos de usuario.
- */
 export type TipoUsuario = "admin" | "mayor" | "estudiante_duoc" | "regular";
 
 export interface Usuario {
     id: number;
     nombre: string;
     email: string;
-    rol: string;         // Rol nativo del backend (ej: 'admin', 'user')
-    tipoUsuario: TipoUsuario; // Rol calculado para lógica de frontend
+    rol: string;
+    tipoUsuario: TipoUsuario;
     fechaNacimiento?: string;
 }
 
@@ -43,7 +39,6 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
     login: (email: string, password: string) => Promise<void>;
     logout: () => void;
-    // Actualizado: register ahora acepta 'rol' opcional para el panel de admin
     register: (data: { nombre: string; email: string; password: string; fechaNacimiento?: string; rol?: string }) => Promise<void>;
     obtenerBeneficioUsuario: (user?: Usuario | null) => string | null;
 }
@@ -60,18 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error: null,
     });
 
-    /**
-     * Lógica de Negocio (Frontend)
-     * CORRECCIÓN CRÍTICA: Ahora recibe el 'rol' del backend.
-     * Prioridad: Admin > Duoc > Mayor > Regular.
-     */
+    // Lógica de Negocio: Inferencia de Roles
     const inferirTipoUsuario = (email: string, rol: string, fechaNacimiento?: string): TipoUsuario => {
-        // 1. Si el backend dice que es admin, ES admin. (Prioridad absoluta)
         if (rol === 'admin' || rol === 'ADMIN') return "admin";
-
-        // 2. Lógica de negocio para clientes (Descuentos)
         if (email.toLowerCase().endsWith("@duoc.cl")) return "estudiante_duoc";
-
         if (fechaNacimiento) {
             const cumple = new Date(fechaNacimiento);
             const hoy = new Date();
@@ -85,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return "regular";
     };
 
-    // Al cargar la app, verificamos si hay sesión guardada
+    // Restaurar sesión al inicio
     useEffect(() => {
         const restaurarSesion = () => {
             const token = localStorage.getItem(STORAGE_KEY_TOKEN);
@@ -96,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     const userParsed = JSON.parse(userRaw);
                     setState({
                         usuarioActual: userParsed,
-                        isLoading: false,
+                        isLoading: false, // La sesión está lista
                         error: null
                     });
                 } catch (e) {
@@ -111,23 +98,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = async (email: string, password: string) => {
         setState(prev => ({ ...prev, isLoading: true, error: null }));
-
         try {
-            const { data } = await api.post<LoginResponse>("/auth/login", {
-                email,
-                password
-            });
+            const { data } = await api.post<LoginResponse>("/auth/login", { email, password });
 
-            // CORRECCIÓN: Pasamos el rol del backend a la función de inferencia
             const tipoCalculado = inferirTipoUsuario(data.user.email, data.user.rol, data.user.fechaNacimiento);
-
             const usuarioAdaptado: Usuario = {
                 id: data.user.id,
                 nombre: data.user.name,
                 email: data.user.email,
                 rol: data.user.rol,
                 fechaNacimiento: data.user.fechaNacimiento,
-                tipoUsuario: tipoCalculado // Aquí ahora guardará 'admin' correctamente
+                tipoUsuario: tipoCalculado
             };
 
             localStorage.setItem(STORAGE_KEY_TOKEN, data.access_token);
@@ -138,16 +119,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 isLoading: false,
                 error: null
             });
-
         } catch (err) {
             const errorAxios = err as AxiosError<{ message: string }>;
-            const mensajeError = errorAxios.response?.data?.message || "Error de conexión o credenciales inválidas";
-
-            setState(prev => ({
-                ...prev,
-                isLoading: false,
-                error: mensajeError
-            }));
+            const mensajeError = errorAxios.response?.data?.message || "Error de credenciales";
+            setState(prev => ({ ...prev, isLoading: false, error: mensajeError }));
             throw err;
         }
     };
@@ -158,56 +133,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({ usuarioActual: null, isLoading: false, error: null });
     };
 
+    /**
+     * REGISTER: Versión Corregida y Blindada
+     * Evita cerrar la sesión del admin al crear usuarios.
+     */
     const register = async (registerData: { nombre: string; email: string; password: string; fechaNacimiento?: string; rol?: string }) => {
-        setState(prev => ({ ...prev, isLoading: true, error: null }));
+        const esAdminCreandoUsuario = !!state.usuarioActual; // ¿Hay alguien logueado?
+
+        // Si NO hay usuario (registro público), mostramos loading global.
+        // Si ES admin, NO tocamos el loading global para no parpadear la interfaz.
+        if (!esAdminCreandoUsuario) {
+            setState(prev => ({ ...prev, isLoading: true, error: null }));
+        }
+
         try {
-            // Nota: Para que el rol se guarde, el backend debe aceptar 'rol' en el Body del registro.
             await api.post("/auth/register", {
                 name: registerData.nombre,
                 email: registerData.email,
                 password: registerData.password,
                 fechaNacimiento: registerData.fechaNacimiento,
-                rol: registerData.rol // Enviamos el rol (útil para creación desde admin)
+                rol: registerData.rol
             });
 
-            // Si el registro es público (sin sesión), hacemos auto-login.
-            // Si es desde el admin panel (con sesión), NO hacemos login para no sacar al admin.
-            if (!state.usuarioActual) {
+            // Solo hacemos auto-login si es un usuario nuevo registrándose él mismo.
+            if (!esAdminCreandoUsuario) {
                 await login(registerData.email, registerData.password);
             }
+            // Si es admin, no hacemos nada más (el componente mostrará el mensaje de éxito).
+
         } catch (err) {
             const errorAxios = err as AxiosError<{ message: string }>;
-            setState(prev => ({
-                ...prev,
-                isLoading: false,
-                error: errorAxios.response?.data?.message || "Error al registrar usuario"
-            }));
-            throw err;
+            const msg = errorAxios.response?.data?.message || "Error al registrar usuario";
+
+            // Solo actualizamos el error global si no es admin (para el form de login público)
+            if (!esAdminCreandoUsuario) {
+                setState(prev => ({ ...prev, isLoading: false, error: msg }));
+            }
+            throw new Error(msg); // Relanzamos para que el formulario local lo capture
         }
     };
 
     const obtenerBeneficioUsuario = (user?: Usuario | null) => {
         const u = user ?? state.usuarioActual;
         if (!u) return null;
-
         switch (u.tipoUsuario) {
-            case "admin":
-                return "Administrador · Acceso total al sistema";
-            case "mayor":
-                return "Usuario Mayor · 50% de descuento por edad";
-            case "estudiante_duoc":
-                return "Estudiante Duoc · Torta de cumpleaños gratis";
-            case "regular":
-                return "Usuario Regular · Descuentos con códigos y promociones";
-            default:
-                return null;
+            case "admin": return "Administrador · Acceso Total";
+            case "mayor": return "Usuario Mayor · 50% Descuento";
+            case "estudiante_duoc": return "Estudiante Duoc · Torta Gratis";
+            default: return "Cliente Regular · Acumula Puntos";
         }
     };
 
     return (
-        <AuthContext.Provider
-            value={{ ...state, login, logout, register, obtenerBeneficioUsuario }}
-        >
+        <AuthContext.Provider value={{ ...state, login, logout, register, obtenerBeneficioUsuario }}>
             {children}
         </AuthContext.Provider>
     );
@@ -215,8 +193,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth(): AuthContextValue {
     const ctx = useContext(AuthContext);
-    if (!ctx) {
-        throw new Error("useAuth debe usarse dentro de un AuthProvider");
-    }
+    if (!ctx) throw new Error("useAuth debe usarse dentro de un AuthProvider");
     return ctx;
 }
