@@ -1,78 +1,48 @@
-// app/components/organisms/UserProfile.tsx
-import { useEffect, useState } from "react";
+import { useAuth, type TipoUsuario } from "~/services/auth-context";
 
-export type UsuarioTipo = "mayor" | "estudiante" | "regular";
-
-export type UsuarioActual = {
-    email: string;
-    tipo: UsuarioTipo;
-};
-
-const CURRENT_USER_KEY = "usuario_actual_mil_sabores";
-
-function leerUsuarioActual(): UsuarioActual | null {
-    if (typeof window === "undefined") return null;
-    try {
-        const raw = window.localStorage.getItem(CURRENT_USER_KEY);
-        if (!raw) return null;
-        return JSON.parse(raw) as UsuarioActual;
-    } catch {
-        return null;
-    }
-}
-
-// 👇 hook reutilizable
-export function useCurrentUser() {
-    const [user, setUser] = useState<UsuarioActual | null>(null);
-
-    useEffect(() => {
-        if (typeof window === "undefined") return;
-
-        const sync = () => {
-            setUser(leerUsuarioActual());
-        };
-
-        sync();
-
-        const handler = () => sync();
-        window.addEventListener("storage", handler);
-        window.addEventListener("usuario_actual_mil_sabores_changed", handler);
-
-        return () => {
-            window.removeEventListener("storage", handler);
-            window.removeEventListener("usuario_actual_mil_sabores_changed", handler);
-        };
-    }, []);
-
-    return user;
-}
-
+/**
+ * COMPONENTE: UserProfile (Resumen para Navbar/Header)
+ * Actualizado: Ahora consume el AuthContext global para mantener consistencia.
+ */
 export function UserProfile() {
-    const currentUser = useCurrentUser();
+    const { usuarioActual, logout } = useAuth();
 
-    if (!currentUser) return null;
+    // Si no hay usuario logueado, no mostramos nada (o podrías mostrar botón Login)
+    if (!usuarioActual) return null;
 
-    const handleLogout = () => {
-        if (typeof window === "undefined") return;
-        window.localStorage.removeItem(CURRENT_USER_KEY);
-        window.dispatchEvent(new Event("usuario_actual_mil_sabores_changed"));
-        window.location.href = "/login";
-    };
-
-    const labelPorTipo: Record<UsuarioTipo, string> = {
-        mayor: "Usuario Mayor - 50% descuento",
-        estudiante: "Estudiante Duoc - Torta de cumpleaños",
-        regular: "Usuario Regular",
+    // Mapeo de textos para mostrar en la interfaz pequeña
+    const labelPorTipo: Record<TipoUsuario, string> = {
+        admin: "Administrador",
+        mayor: "Adulto Mayor",
+        estudiante_duoc: "Estudiante Duoc",
+        regular: "Cliente",
     };
 
     return (
-        <div className="user-info">
-            <div className="user-summary">
-                <span className="user-email">{currentUser.email}</span>
-                <span className="user-type">{labelPorTipo[currentUser.tipo]}</span>
+        <div className="user-info" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div className="user-summary" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+                <span className="user-email" style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                    {usuarioActual.email}
+                </span>
+                <span className="user-type" style={{ fontSize: '0.75rem', color: 'var(--first-color)', textTransform: 'uppercase', fontWeight: 600 }}>
+                    {labelPorTipo[usuarioActual.tipoUsuario] || "Usuario"}
+                </span>
             </div>
-            <button type="button" className="btn-link" onClick={handleLogout}>
-                Cerrar sesión
+
+            <button
+                type="button"
+                className="btn-link"
+                onClick={logout}
+                style={{
+                    fontSize: '0.85rem',
+                    color: '#666',
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    background: 'none',
+                    border: 'none'
+                }}
+            >
+                Salir
             </button>
         </div>
     );

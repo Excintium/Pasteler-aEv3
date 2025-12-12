@@ -8,10 +8,21 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Perfil() {
+    // Consumimos el estado global de autenticación
     const { usuarioActual, logout, obtenerBeneficioUsuario } = useAuth();
 
     // Obtenemos el texto del beneficio según la lógica de negocio
     const beneficioTexto = obtenerBeneficioUsuario();
+
+    // Helper para determinar estilos según el rol
+    const getBadgeStyle = () => {
+        if (usuarioActual?.tipoUsuario === 'admin') return { bg: '#dc3545', text: 'white', label: '🛡️ Administrador del Sistema' };
+        if (usuarioActual?.tipoUsuario === 'estudiante_duoc') return { bg: '#ffc107', text: '#8B4513', label: '🎓 Estudiante Duoc' };
+        if (usuarioActual?.tipoUsuario === 'mayor') return { bg: '#17a2b8', text: 'white', label: '🧓 Adulto Mayor' };
+        return { bg: '#28a745', text: 'white', label: '😊 Cliente Regular' };
+    };
+
+    const badge = getBadgeStyle();
 
     return (
         <ProtectedRoute>
@@ -20,10 +31,11 @@ export default function Perfil() {
                     <div className="profile-card animate-fade-in">
                         {/* Cabecera visual decorativa */}
                         <div className="profile-header-visual" style={{
-                            background: 'var(--color-rosa-suave)',
+                            background: usuarioActual?.tipoUsuario === 'admin' ? 'var(--title-color)' : 'var(--color-rosa-suave)',
                             height: '100px',
                             borderRadius: '1rem 1rem 0 0',
-                            marginBottom: '-50px'
+                            marginBottom: '-50px',
+                            transition: 'background 0.3s'
                         }}></div>
 
                         <div className="profile-content" style={{ padding: '0 2rem 2rem', textAlign: 'center' }}>
@@ -43,15 +55,17 @@ export default function Perfil() {
                             </h2>
                             <p className="email" style={{ color: '#666' }}>{usuarioActual?.email}</p>
 
-                            {/* Insignia de tipo de usuario */}
+                            {/* --- CORRECCIÓN CRÍTICA: Insignia de tipo de usuario --- */}
                             <div className="user-badge" style={{ margin: '1rem 0' }}>
-                                <span className={`badge ${usuarioActual?.tipoUsuario}`} style={{
+                                <span className="badge" style={{
                                     padding: '0.5rem 1rem', borderRadius: '20px',
-                                    background: 'var(--color-dorado)', fontWeight: 'bold',
-                                    fontSize: '0.9rem', color: '#8B4513'
+                                    background: badge.bg,
+                                    color: badge.text,
+                                    fontWeight: 'bold',
+                                    fontSize: '0.9rem',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                                 }}>
-                                    {usuarioActual?.tipoUsuario === 'estudiante_duoc' ? '🎓 Estudiante Duoc' :
-                                        usuarioActual?.tipoUsuario === 'mayor' ? '🧓 Adulto Mayor' : '😊 Cliente Regular'}
+                                    {badge.label}
                                 </span>
                             </div>
 
@@ -64,7 +78,9 @@ export default function Perfil() {
                                 <h4 style={{ color: 'var(--color-chocolate)', marginBottom: '0.5rem' }}>
                                     <i className="fas fa-gift"></i> Tu Beneficio Activo
                                 </h4>
-                                <p style={{ margin: 0 }}>{beneficioTexto || "No tienes beneficios activos actualmente."}</p>
+                                <p style={{ margin: 0 }}>
+                                    {beneficioTexto || "Disfruta de la mejor calidad en cada producto."}
+                                </p>
                             </div>
 
                             {/* Botones de acción */}
@@ -82,9 +98,10 @@ export default function Perfil() {
 
                                 <button onClick={logout} className="btn-danger" style={{
                                     background: '#ff6b6b', color: 'white', padding: '0.8rem 1.5rem',
-                                    borderRadius: '25px', border: 'none', fontWeight: '600', cursor: 'pointer'
+                                    borderRadius: '25px', border: 'none', fontWeight: '600', cursor: 'pointer',
+                                    display: 'inline-flex', alignItems: 'center', gap: '8px'
                                 }}>
-                                    Cerrar Sesión
+                                    <i className="fas fa-sign-out-alt"></i> Cerrar Sesión
                                 </button>
                             </div>
                         </div>

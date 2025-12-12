@@ -43,6 +43,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
     login: (email: string, password: string) => Promise<void>;
     logout: () => void;
+    // Actualizado: register ahora acepta 'rol' opcional para el panel de admin
     register: (data: { nombre: string; email: string; password: string; fechaNacimiento?: string; rol?: string }) => Promise<void>;
     obtenerBeneficioUsuario: (user?: Usuario | null) => string | null;
 }
@@ -61,14 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     /**
      * Lógica de Negocio (Frontend)
-     * MEJORA: Ahora recibe el 'rol' del backend.
+     * CORRECCIÓN CRÍTICA: Ahora recibe el 'rol' del backend.
      * Prioridad: Admin > Duoc > Mayor > Regular.
      */
     const inferirTipoUsuario = (email: string, rol: string, fechaNacimiento?: string): TipoUsuario => {
-        // 1. Prioridad absoluta al rol administrativo
+        // 1. Si el backend dice que es admin, ES admin. (Prioridad absoluta)
         if (rol === 'admin' || rol === 'ADMIN') return "admin";
 
-        // 2. Lógica de negocio existente
+        // 2. Lógica de negocio para clientes (Descuentos)
         if (email.toLowerCase().endsWith("@duoc.cl")) return "estudiante_duoc";
 
         if (fechaNacimiento) {
@@ -84,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return "regular";
     };
 
+    // Al cargar la app, verificamos si hay sesión guardada
     useEffect(() => {
         const restaurarSesion = () => {
             const token = localStorage.getItem(STORAGE_KEY_TOKEN);
@@ -116,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 password
             });
 
-            // FIX: Pasamos data.user.rol a la función de inferencia
+            // CORRECCIÓN: Pasamos el rol del backend a la función de inferencia
             const tipoCalculado = inferirTipoUsuario(data.user.email, data.user.rol, data.user.fechaNacimiento);
 
             const usuarioAdaptado: Usuario = {
@@ -125,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email: data.user.email,
                 rol: data.user.rol,
                 fechaNacimiento: data.user.fechaNacimiento,
-                tipoUsuario: tipoCalculado
+                tipoUsuario: tipoCalculado // Aquí ahora guardará 'admin' correctamente
             };
 
             localStorage.setItem(STORAGE_KEY_TOKEN, data.access_token);
@@ -156,20 +158,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({ usuarioActual: null, isLoading: false, error: null });
     };
 
-    // Actualizamos register para aceptar rol opcional (útil para el admin panel)
     const register = async (registerData: { nombre: string; email: string; password: string; fechaNacimiento?: string; rol?: string }) => {
         setState(prev => ({ ...prev, isLoading: true, error: null }));
         try {
+            // Nota: Para que el rol se guarde, el backend debe aceptar 'rol' en el Body del registro.
             await api.post("/auth/register", {
                 name: registerData.nombre,
                 email: registerData.email,
                 password: registerData.password,
                 fechaNacimiento: registerData.fechaNacimiento,
-                rol: registerData.rol // Nota: El backend debe estar preparado para recibir esto
+                rol: registerData.rol // Enviamos el rol (útil para creación desde admin)
             });
 
-            // Si no estamos logueados (registro público), hacemos login.
-            // Si ya estamos logueados (admin creando usuario), no hacemos autologin.
+            // Si el registro es público (sin sesión), hacemos auto-login.
+            // Si es desde el admin panel (con sesión), NO hacemos login para no sacar al admin.
             if (!state.usuarioActual) {
                 await login(registerData.email, registerData.password);
             }
